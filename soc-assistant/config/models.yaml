@@ -80,7 +80,7 @@ report_generator:
 
 # Models available for the per-role ablation study referenced in the
 # architecture diagram legend. Not used at runtime; consumed by
-# eval/ablation.py (see docs/ARCHITECTURE.md, section "Improvements").
+# eval/ablation.py (see docs/ARCHITECTURE.md, "Model allocation").
 ablation_candidates:
   - foundation-sec-8b-reasoning
   - llama-3.3-70b-instruct

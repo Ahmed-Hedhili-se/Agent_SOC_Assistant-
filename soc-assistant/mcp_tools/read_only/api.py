@@ -2,8 +2,8 @@
 mcp_tools/read_only/api.py
 
 Read-only MCP tool implementations.
-All 14 tools are implemented with realistic deterministic mock data.
-In production these would call real SIEM / EDR / threat-intel APIs.
+All 14 tools return realistic, deterministic mock data; in production they
+would call real SIEM / EDR / threat-intel APIs.
 """
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ _ASSET_DB = {
 }
 
 _USER_DB = {
-    "salem":    {"department": "Engineering", "role": "Admin",   "mfa_enabled": True,  "risk_score": 0.2},
+    "it_admin": {"department": "Engineering", "role": "Admin",   "mfa_enabled": True,  "risk_score": 0.2},
     "jdoe":     {"department": "Finance",     "role": "Analyst", "mfa_enabled": True,  "risk_score": 0.1},
     "badactor": {"department": "Unknown",     "role": "Unknown", "mfa_enabled": False, "risk_score": 0.9},
     "unknown":  {"department": "Unknown",     "role": "Unknown", "mfa_enabled": False, "risk_score": 0.5},

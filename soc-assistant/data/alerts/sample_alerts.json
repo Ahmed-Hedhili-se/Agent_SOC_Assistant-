@@ -1,0 +1,46 @@
+[
+  {
+    "alert_id": "ALT-2026-001",
+    "category": "impossible_travel",
+    "severity": 8.0,
+    "source": "Identity",
+    "timestamp": "2026-07-27T08:00:00Z",
+    "user": "alice",
+    "source_ip": "185.220.101.45",
+    "raw_log": "Login from IP 185.220.101.45 (Russia) exactly 5 minutes after login from IP 72.14.200.1 (USA)."
+  },
+  {
+    "alert_id": "ALT-2026-002",
+    "category": "malware",
+    "severity": 9.5,
+    "source": "EDR",
+    "timestamp": "2026-07-27T08:15:00Z",
+    "user": "badactor",
+    "hostname": "SRV-DC-01",
+    "source_ip": "45.83.64.1",
+    "process": "powershell.exe",
+    "raw_log": "cmd.exe spawned powershell.exe -enc <base64> which connected to C2 IP 45.83.64.1"
+  },
+  {
+    "alert_id": "ALT-2026-003",
+    "category": "lateral_movement",
+    "severity": 8.5,
+    "source": "EDR",
+    "timestamp": "2026-07-27T09:05:00Z",
+    "user": "it_admin",
+    "hostname": "SRV-DC-01",
+    "process": "mimikatz.exe",
+    "raw_log": "LSASS memory accessed by mimikatz.exe followed by SMB admin-share connection to SRV-DC-01."
+  },
+  {
+    "alert_id": "ALT-2026-004",
+    "category": "data_exfiltration",
+    "severity": 7.0,
+    "source": "Cloud",
+    "timestamp": "2026-07-27T10:30:00Z",
+    "user": "jdoe",
+    "hostname": "LAPTOP-FIN-07",
+    "dest_ip": "103.21.244.0",
+    "raw_log": "Large outbound transfer (2.3GB) from LAPTOP-FIN-07 to external cloud storage endpoint 103.21.244.0 outside business hours."
+  }
+]

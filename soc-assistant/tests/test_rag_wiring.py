@@ -10,20 +10,6 @@ Run from the soc-assistant/ directory:
 """
 from __future__ import annotations
 
-import os
-import sys
-from pathlib import Path
-
-os.environ["SOC_ASSISTANT_MOCK_EMBEDDINGS"] = "1"
-os.environ["SOC_ASSISTANT_MOCK_LLM"] = "1"
-
-SYS_PATH = Path(__file__).parent.parent
-if str(SYS_PATH) not in sys.path:
-    sys.path.insert(0, str(SYS_PATH))
-os.chdir(SYS_PATH)
-
-import pytest
-
 
 # ---------------------------------------------------------------------------
 # mcp_tools/rag/api.py helpers

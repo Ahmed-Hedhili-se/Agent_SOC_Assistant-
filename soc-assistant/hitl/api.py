@@ -23,7 +23,7 @@ records DPO (chosen, rejected) pairs consumed later by training/dpo_train.py.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -32,6 +32,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
+from config import load_yaml
 from review.feedback.rag_update import update_rag_from_correction
 from review.feedback.preference_pairs import record_preference_pairs_from_decision
 from eval.override_rate import calculate_override_rate_by_role
@@ -83,6 +84,45 @@ def register_investigation(alert_id: str, state: Dict[str, Any]) -> None:
     _save_store(store)
 
 
+_DEFAULT_SLA_BANDS = [
+    {"min_severity": 9.0, "minutes": 15},
+    {"min_severity": 7.0, "minutes": 60},
+    {"min_severity": 4.0, "minutes": 240},
+    {"min_severity": 0.0, "minutes": 1440},
+]
+
+
+def _parse_timestamp(value: Any) -> Optional[datetime]:
+    try:
+        ts = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+
+
+def compute_sla_deadline(state: Dict[str, Any]) -> str:
+    """Analyst response deadline: alert time + the SLA for its triage
+    severity band (config/thresholds.yaml, `sla_minutes`)."""
+    try:
+        bands = load_yaml("thresholds.yaml").get("sla_minutes") or _DEFAULT_SLA_BANDS
+    except OSError:
+        bands = _DEFAULT_SLA_BANDS
+
+    severity = float((state.get("triage_output") or {}).get("severity") or 0.0)
+    minutes = next(
+        (b["minutes"] for b in sorted(bands, key=lambda b: -b["min_severity"])
+         if severity >= b["min_severity"]),
+        _DEFAULT_SLA_BANDS[-1]["minutes"],
+    )
+
+    start = (
+        _parse_timestamp(state.get("alert_timestamp"))
+        or _parse_timestamp(state.get("pipeline_start_time"))
+        or datetime.now(timezone.utc)
+    )
+    return (start + timedelta(minutes=minutes)).isoformat()
+
+
 # ---------------------------------------------------------------------------
 # Pydantic models
 # ---------------------------------------------------------------------------
@@ -116,13 +156,13 @@ async def get_investigation_evidence(id: str):
         raise HTTPException(status_code=404, detail=f"Investigation '{id}' not found.")
 
     return {
-        "alert_id":     state.get("alert_id"),
-        "alert_raw":    state.get("alert_raw"),
-        "triage_output":state.get("triage_output"),
-        "log_output":   state.get("log_output"),
-        "cti_output":   state.get("cti_output"),
-        "attck_output": state.get("attck_output"),
-        "sla_deadline":  datetime.now(timezone.utc).isoformat(),  # placeholder
+        "alert_id":         state.get("alert_id"),
+        "alert_raw":        state.get("alert_raw"),
+        "triage_output":    state.get("triage_output"),
+        "log_output":       state.get("log_output"),
+        "cti_output":       state.get("cti_output"),
+        "attck_output":     state.get("attck_output"),
+        "sla_deadline":     compute_sla_deadline(state),
         "agents_completed": state.get("agents_completed", []),
     }
 

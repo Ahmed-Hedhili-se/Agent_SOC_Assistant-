@@ -1,9 +1,8 @@
 """
 agents/log_investigator.py
 
-Log Investigator agent -- runs in parallel with cti_enrichment and attck_mapper.
-Calls the configured LLM (see config/provider.py) to correlate log events and
-identify anomalies.
+Log Investigator agent -- calls the configured LLM (see config/provider.py)
+to correlate log events and identify anomalies.
 
 Runs in parallel with cti_enrichment and attck_mapper (same LangGraph
 superstep). MUST return only the keys it touches -- returning the full
@@ -18,6 +17,7 @@ import re
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
+from agents._llm import parse_json_response
 from config.provider import get_provider
 from state.investigation import SOCInvestigationState
 from schemas.agent_io import LogInvestigatorOutput
@@ -57,13 +57,12 @@ def run_log_investigator(state: SOCInvestigationState) -> dict:
         f"Timestamp: {alert.get('timestamp', 'N/A')}"
     )
 
-    # --- Pre-fetch context using MCP tools ---
     user = alert.get("user")
     host = alert.get("hostname")
 
     source_ip = alert.get("source_ip")
     if not source_ip:
-        ip_match = re.search(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", alert.get("raw_log", ""))
+        ip_match = re.search(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", alert.get("raw_log") or "")
         source_ip = ip_match.group() if ip_match else None
 
     siem_logs = querySIEMLogs(query_terms=["*"], user=user, host=host, source_ip=source_ip)
@@ -82,7 +81,7 @@ def run_log_investigator(state: SOCInvestigationState) -> dict:
         HumanMessage(content=f"Investigate the logs for this security alert:\n\n{enriched_context}")
     ])
 
-    parsed = _parse_json_response(response.content)
+    parsed = parse_json_response(response.content)
     output = LogInvestigatorOutput(
         events=parsed.get("events", []),
         entities=parsed.get("entities") or {"ips": [], "users": [], "processes": []},
@@ -94,17 +93,3 @@ def run_log_investigator(state: SOCInvestigationState) -> dict:
         "log_output": output.model_dump(),
         "agents_completed": ["log_investigator"],
     }
-
-
-def _parse_json_response(content: str) -> dict:
-    """Extract and parse the first JSON object from an LLM response string."""
-    try:
-        return json.loads(content.strip())
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", content, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-    return {}

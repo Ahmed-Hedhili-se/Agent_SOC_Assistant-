@@ -30,7 +30,8 @@ max_length: 2048
 # split) improves on the base checkpoint's margin by at least this much.
 min_reward_margin_improvement: 0.0
 
-checkpoint_output_dir: ./training/checkpoints
+# Relative to soc-assistant/ (absolute paths are used as-is).
+checkpoint_output_dir: training/checkpoints
 
 # Base checkpoint used to start each role's DPO run. These are HF Hub IDs
 # / local paths for the SAME model identified by model_id in

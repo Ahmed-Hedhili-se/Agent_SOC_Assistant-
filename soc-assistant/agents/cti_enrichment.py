@@ -16,6 +16,7 @@ import re
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
+from agents._llm import parse_json_response
 from config.provider import get_provider
 from state.investigation import SOCInvestigationState
 from schemas.agent_io import CTIEnrichmentOutput
@@ -115,7 +116,7 @@ def run_cti_enrichment(state: SOCInvestigationState) -> dict:
         HumanMessage(content=f"Enrich the threat intelligence for this security alert:\n\n{enriched_context}")
     ])
 
-    parsed = _parse_json_response(response.content)
+    parsed = parse_json_response(response.content)
     output = CTIEnrichmentOutput(
         indicators=parsed.get("indicators") or prefetched_indicators,
         cti_context=cti_context,
@@ -127,18 +128,3 @@ def run_cti_enrichment(state: SOCInvestigationState) -> dict:
         "cti_output": output.model_dump(),
         "agents_completed": ["cti_enrichment"],
     }
-
-
-def _parse_json_response(content: str) -> dict:
-    """Extract and parse the first JSON object from an LLM response string."""
-    import json
-    try:
-        return json.loads(content.strip())
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", content, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-    return {}

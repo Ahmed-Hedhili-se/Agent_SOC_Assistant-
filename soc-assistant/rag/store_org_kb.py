@@ -4,7 +4,7 @@ rag/store_org_kb.py
 Store 4 - Org KB (direct record lookup: assets, users, Sigma rules, FP
 history in the full design; a minimal assets table for this prototype).
 
-Same two bug fixes as rag/store_ioc.py -- see that module's docstring.
+Same lazy, location-anchored SQLite setup as rag/store_ioc.py.
 """
 from __future__ import annotations
 

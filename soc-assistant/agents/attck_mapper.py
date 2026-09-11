@@ -12,11 +12,9 @@ returns something useful even with no live model behind it.
 """
 from __future__ import annotations
 
-import json
-import re
-
 from langchain_core.messages import SystemMessage, HumanMessage
 
+from agents._llm import parse_json_response
 from config.provider import get_provider
 from state.investigation import SOCInvestigationState
 from schemas.agent_io import ATTCKMapperOutput
@@ -96,13 +94,13 @@ def run_attck_mapper(state: SOCInvestigationState) -> dict:
         HumanMessage(content=f"Map the MITRE ATT&CK techniques for this security alert:\n\n{enriched_context}")
     ])
 
-    parsed = _parse_json_response(response.content)
+    parsed = parse_json_response(response.content)
 
     technique_ids     = parsed.get("technique_ids") or candidate_ids
-    observed_tactics   = parsed.get("observed_tactics") or buildTacticChain(technique_ids)
-    kill_chain_pos     = int(parsed.get("kill_chain_position") or killChainPosition(observed_tactics))
-    predicted_next      = parsed.get("predicted_next") or predictNextTactics(observed_tactics)
-    technique_details   = [getTechniqueDetail(tid) for tid in technique_ids]
+    observed_tactics  = parsed.get("observed_tactics") or buildTacticChain(technique_ids)
+    kill_chain_pos    = int(parsed.get("kill_chain_position") or killChainPosition(observed_tactics))
+    predicted_next    = parsed.get("predicted_next") or predictNextTactics(observed_tactics)
+    technique_details = [getTechniqueDetail(tid) for tid in technique_ids]
 
     output = ATTCKMapperOutput(
         technique_ids=technique_ids,
@@ -116,17 +114,3 @@ def run_attck_mapper(state: SOCInvestigationState) -> dict:
         "attck_output": output.model_dump(),
         "agents_completed": ["attck_mapper"],
     }
-
-
-def _parse_json_response(content: str) -> dict:
-    """Extract and parse the first JSON object from an LLM response string."""
-    try:
-        return json.loads(content.strip())
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", content, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-    return {}

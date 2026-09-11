@@ -4,26 +4,16 @@ Regression tests for orchestrator/graph.py.
 Run from the soc-assistant/ directory:
     pytest tests/test_orchestrator_graph.py -v
 """
-import sys
-import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# No live Ollama/vLLM server in CI -- get_provider() returns a
-# deterministic mock completion per role instead (see config/provider.py).
-os.environ["SOC_ASSISTANT_MOCK_EMBEDDINGS"] = "1"
-os.environ["SOC_ASSISTANT_MOCK_LLM"] = "1"
-
 import pytest
+
 from orchestrator.graph import build_soc_graph, route_after_triage
 
 
 def make_state(category="credential_access", severity=5.0, confidence=0.5):
     return {
         "alert_id": f"test-{category}",
-        # triage (now a real LLM-calling agent, see agents/triage.py) reads
-        # category from alert_raw, not alert_category -- mock-LLM mode
-        # falls back to alert_raw.get("category") when it omits the field.
+        # triage reads the category from alert_raw; in mock-LLM mode it
+        # falls back to alert_raw["category"] since the mock omits it.
         "alert_raw": {"x": 1, "category": category},
         "alert_category": category,
         "alert_timestamp": "2026-01-01",
@@ -65,6 +55,22 @@ def test_route_after_triage_impossible_travel_skips_log_investigator():
     targets = route_after_triage(state)
     assert set(targets) == {"cti_enrichment", "attck_mapper"}
     assert "log_investigator" not in targets
+
+
+def test_fast_path_fires_on_critical_high_confidence_triage(capsys):
+    """Fast path keys off triage's own confidence (1 - fp_probability):
+    the pipeline-wide confidence_score is still 0.0 right after triage."""
+    state = make_state(category="malware", confidence=0.0)
+    state["triage_output"] = {"severity": 9.5, "category": "malware", "fp_probability": 0.05}
+    route_after_triage(state)
+    assert "[FAST-PATH]" in capsys.readouterr().out
+
+
+def test_fast_path_skipped_when_triage_is_uncertain(capsys):
+    state = make_state(category="malware")
+    state["triage_output"] = {"severity": 9.5, "category": "malware", "fp_probability": 0.5}
+    route_after_triage(state)
+    assert "[FAST-PATH]" not in capsys.readouterr().out
 
 
 @pytest.mark.parametrize(

@@ -5,8 +5,9 @@ run_pipeline.py
 Main demo runner for the Agentic SOC Assistant.
 
 Usage:
-    .venv\\Scripts\\python run_pipeline.py
-    .venv\\Scripts\\python run_pipeline.py --alert-id ALT-2026-002
+    python run_pipeline.py                          # all sample alerts, live LLM
+    python run_pipeline.py --alert-id ALT-2026-002  # a single alert
+    python run_pipeline.py --mock-llm               # no LLM server required
 """
 from __future__ import annotations
 
@@ -14,15 +15,18 @@ import argparse
 import json
 import os
 import sys
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Ensure we run from the soc-assistant directory
-os.chdir(Path(__file__).parent)
-sys.path.insert(0, str(Path(__file__).parent))
+PROJECT_ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
-# Enable mock embeddings for running to avoid heavy downloads and network dependencies
-os.environ["SOC_ASSISTANT_MOCK_EMBEDDINGS"] = "1"
+# Mock embeddings by default to avoid a model download; set
+# SOC_ASSISTANT_MOCK_EMBEDDINGS=0 to use the real sentence-transformer.
+os.environ.setdefault("SOC_ASSISTANT_MOCK_EMBEDDINGS", "1")
+
+SAMPLE_ALERTS_PATH = PROJECT_ROOT / "data" / "alerts" / "sample_alerts.json"
 
 
 # -- Console helpers ----------------------------------------------------------
@@ -162,7 +166,14 @@ def main() -> None:
         "--alert-id", default=None,
         help="Run a specific alert ID (e.g. ALT-2026-002). Defaults to all sample alerts.",
     )
+    parser.add_argument(
+        "--mock-llm", action="store_true",
+        help="Use deterministic mock LLM completions instead of a live model endpoint.",
+    )
     args = parser.parse_args()
+
+    if args.mock_llm:
+        os.environ["SOC_ASSISTANT_MOCK_LLM"] = "1"
 
     print(_c(BOLD + BLUE, "\n" + "=" * 70))
     print(_c(BOLD + BLUE,   "  [SOC] Agentic SOC Assistant - End-to-End Pipeline Demo"))
@@ -173,9 +184,7 @@ def main() -> None:
     graph = build_soc_graph()
     print(_c(GREEN, "  [+] Graph compiled successfully.\n"))
 
-    # Load sample alerts
-    alerts_path = Path("data/alerts/sample_alerts.json")
-    all_alerts: list[dict] = json.loads(alerts_path.read_text(encoding="utf-8"))
+    all_alerts: list[dict] = json.loads(SAMPLE_ALERTS_PATH.read_text(encoding="utf-8"))
 
     if args.alert_id:
         alerts = [a for a in all_alerts if a["alert_id"] == args.alert_id]
@@ -185,11 +194,11 @@ def main() -> None:
     else:
         alerts = all_alerts
 
-    # Register investigations for HITL API
+    # Register completed investigations with the HITL API's store
     try:
         from hitl.api import register_investigation
         hitl_available = True
-    except Exception:
+    except ImportError:
         hitl_available = False
 
     results: list[dict] = []
@@ -205,9 +214,8 @@ def main() -> None:
                 register_investigation(alert["alert_id"], state)
         except Exception as e:
             print(_c(RED, f"  [-] Error running {alert['alert_id']}: {e}"))
-            import traceback; traceback.print_exc()
+            traceback.print_exc()
 
-    # Summary table
     _banner("Run Summary")
     print(f"  {'Alert ID':<20} {'Category':<25} {'Verdict':<22} {'Confidence':>10}")
     print(_c(BLUE, "  " + "-" * 65))
@@ -228,7 +236,7 @@ def main() -> None:
 
     if hitl_available:
         print(_c(GREEN, "  [+] Investigations registered. Start the HITL API server with:"))
-        print(_c(CYAN,  "    .venv\\Scripts\\uvicorn hitl.api:app --host 127.0.0.1 --port 8000 --reload"))
+        print(_c(CYAN,  "    uvicorn hitl.api:app --host 127.0.0.1 --port 8000 --reload"))
         print()
 
 

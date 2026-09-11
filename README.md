@@ -1,78 +1,156 @@
 # Agentic SOC Assistant
 
-An intelligent, multi-agent Security Operations Center (SOC) assistant built with **LangGraph** and the **Model Context Protocol (MCP)**. It automates security alert triage, log investigation, CTI enrichment, MITRE ATT&CK technique mapping, and incident report generation, incorporating a strict Human-in-the-Loop (HITL) boundary for any real-world remediation.
+A multi-agent Security Operations Center (SOC) assistant built with **LangGraph** and a **Model Context Protocol (MCP)**-style tool layer. It automates alert triage, log investigation, CTI enrichment, MITRE ATT&CK mapping, and incident report drafting — while keeping a strict **human-in-the-loop (HITL)** boundary around every action that could change the real environment.
 
-## Design Philosophy
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-1f6feb)
+![FastAPI](https://img.shields.io/badge/HITL%20API-FastAPI-009688)
 
-**Human-in-the-loop augmentation, not autonomy.** 
-Agents collect evidence, correlate logs, enrich with CTI, map to MITRE ATT&CK, and draft reports. **No agent may take an action that changes the real environment.** All remediation actions require explicit analyst approval, enforced structurally at the MCP tool layer.
+## Design philosophy
 
-## Architecture & Workflows
+**Augmentation, not autonomy.** Agents collect evidence, correlate logs, enrich with threat intelligence, map to ATT&CK, and draft reports. **No agent can change the real environment.** Every remediation tool (`isolateHost`, `disableUserAccount`, `blockIPFirewall`, `createTicket`) requires an `approved_by` field that only the HITL decision endpoint can set — enforced in code at the tool layer, not just in prompts.
 
-The assistant orchestrates multiple specialized agent nodes using a LangGraph `StateGraph`:
-1. **Triage Agent**: Classifies incident severity, category, and false-positive probability.
-2. **Log Investigator**: Queries SIEM systems for correlated logs and builds timelines.
-3. **CTI Enrichment**: Enriches investigation with IP reputation data and open-source intelligence.
-4. **ATT&CK Mapper**: Maps attacker behaviors to MITRE ATT&CK techniques via hybrid vector search (RAG).
-5. **Reasoning Synthesis**: Reconciles contradictory signals and aggregates analysis from parallel investigator agents.
-6. **Report Generator**: Formats investigation findings into structured reports.
+## Architecture
 
-### Advanced Orchestrator Capabilities
-- **Conditional Routing**: Identity-only alerts skip log investigation; endpoint telemetry alerts trigger parallel log and CTI enrichment branches.
-- **Failure Recovery**: Agent nodes are wrapped with automatic retries to ensure pipeline stability.
-- **Fast-path Mode**: Critical severity (>= 9.0) and high-confidence (>= 0.90) alerts trigger immediate preliminary side-channel notifications.
-- **Budget Enforcement**: MCP tool calls are capped per agent role to prevent runaway LLM execution.
+![Target architecture](docs/architecture_diagram.png)
 
----
+```text
+triage ──► [ log_investigator | cti_enrichment | attck_mapper ] ──► reasoning_synthesis ──► report_generator
+                    (parallel LangGraph superstep)                                                │
+                                                                          ─ ─ HITL boundary ─ ─ ─ ┤
+                                                                                                  ▼
+                                                         analyst dashboard: approve / modify / reject / escalate
+                                                                                                  │
+                                                           ┌──────────────────────────────────────┴───┐
+                                                           ▼                                          ▼
+                                                  RAG feedback ledger                     DPO preference pairs
+                                                                                     (offline per-role fine-tuning)
+```
 
-## Directory Structure
+| Agent | Responsibility |
+|---|---|
+| **Triage** | Severity score, false-positive probability, category, authorized-activity check |
+| **Log Investigator** | Correlates SIEM events and process trees into a timeline of anomalies |
+| **CTI Enrichment** | IP/hash reputation lookups, shared-infrastructure discounting, RAG-retrieved CTI context |
+| **ATT&CK Mapper** | Candidate techniques from RAG, tactic chain, kill-chain position, predicted next tactics |
+| **Reasoning & Synthesis** | Reconciles all agent outputs into a verdict; escalation policy enforced as code |
+| **Report Generator** | Executive summary, evidence chain, technique cards, remediation proposals (always approval-gated) |
+
+### Key capabilities
+
+- **Conditional routing** — identity-only alerts (e.g. `impossible_travel`) skip log investigation; endpoint alerts fan out to three parallel agents.
+- **Failure recovery** — each node is retried once, then recorded in `agents_failed` / `missing_evidence` instead of crashing the graph.
+- **Fast path** — critical (severity ≥ 9.0), high-confidence (≥ 0.90) triage results trigger an immediate side-channel notification.
+- **Privacy guard** — agents that handle raw internal logs refuse to fall back to a hosted LLM (`PrivacyConstraintViolation`).
+- **4-store RAG knowledge base** — MITRE ATT&CK and CTI reports (Chroma), IOC exclusivity and org assets (SQLite), each with a built-in fallback so the pipeline runs offline.
+- **HITL dashboard & SLA** — FastAPI backend with a built-in analyst UI and per-severity response deadlines.
+- **Continual improvement** — analyst corrections feed a RAG feedback ledger and a DPO preference-pair dataset; `training/dpo_train.py` fine-tunes a role offline and promotes the checkpoint only if the held-out reward margin improves.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design and [docs/report.pdf](docs/report.pdf) for the evaluation report.
+
+## Project structure
 
 ```text
 SOC_Assistant/
-├── datasets_/              # [Ignored] External datasets
-├── soc-assistant/          # Core Python application
-│   ├── agents/             # Agent node implementations (triage, log_investigator, etc.)
-│   ├── config/             # YAML configurations (models, tool_budgets, thresholds)
-│   ├── eval/               # Evaluation hooks for override rate tracking
-│   ├── hitl/               # Human-in-the-loop FastAPI backend endpoints
-│   ├── mcp_tools/          # MCP safety boundary (read_only, rag, write with approval gates)
-│   ├── models/             # Pydantic models for agent outputs
-│   ├── orchestrator/       # LangGraph StateGraph definitions
-│   ├── rag/                # 4-Store RAG Knowledge Base (ATT&CK, CTI, IOCs, Org KB)
-│   ├── review/             # Feedback loop for analyst corrections
-│   ├── schemas/            # Pydantic schemas (NormalizedAlert, agent I/O)
-│   ├── state/              # Graph state schema (SOCInvestigationState)
-│   └── requirements.txt    # Application dependencies
-├── .gitignore              # Project-wide Git ignore rules
-└── README.md               # Main project documentation
+├── docs/                    # Architecture notes, diagram, evaluation report (LaTeX + PDF)
+└── soc-assistant/
+    ├── agents/              # The six LangGraph agent nodes
+    ├── config/              # models.yaml (LLM per role), thresholds, tool budgets, DPO settings
+    ├── data/alerts/         # Sample alerts used by the demo and the tests
+    ├── deploy/              # Optional vLLM self-hosting script + systemd unit
+    ├── eval/                # Override-rate metrics and per-role model ablation harness
+    ├── hitl/                # FastAPI HITL backend + static analyst dashboard (hitl/ui/)
+    ├── mcp_tools/           # Tool layer: read_only, rag, and approval-gated write tools
+    ├── models/, schemas/    # Pydantic models for alerts and agent outputs
+    ├── orchestrator/        # LangGraph StateGraph: routing, retries, fast path
+    ├── rag/                 # Vector / key-value stores and the ATT&CK indexer
+    ├── review/feedback/     # Analyst feedback loops (RAG ledger, DPO preference pairs)
+    ├── state/               # Shared graph state schema
+    ├── training/            # Offline per-role DPO fine-tuning
+    ├── tests/               # pytest suite (runs fully offline)
+    ├── run_pipeline.py      # End-to-end demo runner
+    └── requirements.txt
 ```
 
----
+## Getting started
 
-## Getting Started
+### Prerequisites
 
-### 1. Prerequisites
 - Python 3.11+
-- API-hosted LLMs. The project configuration defaults to `grok-4-fast` (per `config/models.yaml`), but can easily be pointed to an OpenAI-compatible vLLM endpoint hosting Foundation-sec-8B.
+- For live inference: an OpenAI-compatible endpoint. The default config (`soc-assistant/config/models.yaml`) points every role at a local [Ollama](https://ollama.com) server running `gpt-oss:20b`, with an optional hosted Grok fallback (`GROK_API_KEY`).
+- No LLM at all is needed for the demo in mock mode or for the test suite.
 
-### 2. Setup & Installation
-1. Clone the repository and navigate to the project directory:
-   ```bash
-   cd SOC_Assistant
-   ```
-2. Set up a virtual environment:
-   ```bash
-   python -m venv .venv
-   # On Windows use: .venv\Scripts\activate
-   source .venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r soc-assistant/requirements.txt
-   ```
+### Installation
 
-### 3. Configuration
-Adjust the YAML configurations in `soc-assistant/config/` to set your model providers, endpoints, tool budgets, and fast-path escalation thresholds.
+```bash
+git clone https://github.com/Ahmed-Hedhili-se/Agent_SOC_Assistant-.git
+cd Agent_SOC_Assistant-
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r soc-assistant/requirements.txt
+```
 
-### 4. Running the Application
-The primary entry points are the LangGraph orchestrator (`soc-assistant/orchestrator/graph.py`) and the FastAPI HITL backend (`soc-assistant/hitl/api.py`).
+The DPO packages at the bottom of `requirements.txt` (`torch`, `transformers`, `trl`, …) are only needed for `training/dpo_train.py`.
+
+### Run the pipeline
+
+```bash
+cd soc-assistant
+
+# Offline demo: deterministic mock LLM, no server required
+python run_pipeline.py --mock-llm
+
+# Live inference against the endpoints in config/models.yaml
+# (with `ollama serve` running, pull the model once: `ollama pull gpt-oss:20b`)
+python run_pipeline.py --alert-id ALT-2026-002
+```
+
+### Review investigations in the HITL dashboard
+
+```bash
+cd soc-assistant
+uvicorn hitl.api:app --host 127.0.0.1 --port 8000
+```
+
+Open <http://127.0.0.1:8000> for the analyst dashboard, or <http://127.0.0.1:8000/docs> for the interactive API.
+
+### Optional: index the real MITRE ATT&CK corpus
+
+```bash
+cd soc-assistant
+SOC_ASSISTANT_MOCK_EMBEDDINGS=0 python -m rag.indexer
+```
+
+### Run the tests
+
+```bash
+cd soc-assistant
+pytest -v
+```
+
+The suite runs fully offline (mock embeddings + mock LLM) and covers graph routing, parallel fan-out regressions, the approval gate on write tools, RAG wiring, the HITL decision flow, SLA deadlines, and the DPO data pipeline.
+
+## Configuration
+
+| File | Purpose |
+|---|---|
+| `config/models.yaml` | Endpoint, model and fallback per agent role |
+| `config/thresholds.yaml` | Fast-path, escalation and SLA thresholds |
+| `config/tool_budgets.yaml` | Per-role MCP tool-call caps |
+| `config/dpo.yaml` | DPO training hyper-parameters and promotion gate |
+
+| Environment variable | Effect |
+|---|---|
+| `SOC_ASSISTANT_MOCK_LLM=1` | Deterministic mock completions instead of calling an LLM |
+| `SOC_ASSISTANT_MOCK_EMBEDDINGS=1` | Zero-vector embedder instead of downloading a sentence-transformer |
+| `GROK_API_KEY` | API key for the hosted Grok fallback |
+
+## Current limitations
+
+- SIEM, EDR and threat-intel tools return deterministic mock data; write tools are simulated.
+- Per-role tool budgets are configured but not yet enforced at call time.
+- RAG corrections are logged to a ledger; live re-embedding into Chroma is a planned step.
+
+## Author
+
+**Ahmed Hedhili** — [GitHub @Ahmed-Hedhili-se](https://github.com/Ahmed-Hedhili-se)

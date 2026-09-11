@@ -1,6 +1,10 @@
+"""
+state/investigation.py
+
+LangGraph state schema shared by every node of the SOC investigation graph.
+"""
 import operator
 from typing import TypedDict, Optional, Annotated
-from datetime import datetime
 
 
 def merge_dicts(left: dict, right: dict) -> dict:

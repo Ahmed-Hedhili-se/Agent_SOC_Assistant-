@@ -245,7 +245,8 @@ def train_role(
     base_margin = _mean_reward_margin(model, tokenizer, dataset.holdout, device)
 
     output_dir = (
-        Path(cfg.get("checkpoint_output_dir", "./training/checkpoints"))
+        _SOC_ASSISTANT_ROOT
+        / cfg.get("checkpoint_output_dir", "training/checkpoints")
         / role
         / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     )

@@ -5,24 +5,17 @@ Reasoning & Synthesis agent -- runs after all parallel branches converge.
 Calls the configured LLM (see config/provider.py) to reconcile all agent
 outputs into a final verdict and escalation decision.
 
-Like every other node in this graph, it must return a PARTIAL update (only
-the keys it touches). Returning the full state here was the actual root
-cause of a bug where every node's contribution to `agents_completed`
-appeared duplicated: this node used to read the already-accumulated
-`agents_completed` list, append one entry, and return the WHOLE list as
-part of the full state -- which LangGraph's `operator.add` reducer then
-added ON TOP OF the existing channel value a second time, compounding
-with every downstream node. See tests/test_orchestrator_graph.py for the
-regression test.
+Like every other node in this graph, it returns a PARTIAL update (only the
+keys it touches): returning the full state would make LangGraph's
+`operator.add` reducer re-append the already-accumulated
+`agents_completed` list (see tests/test_orchestrator_graph.py).
 """
 from __future__ import annotations
 
-import json
-import re
-
-import yaml
 from langchain_core.messages import SystemMessage, HumanMessage
 
+from agents._llm import parse_json_response
+from config import load_yaml
 from config.provider import get_provider
 from state.investigation import SOCInvestigationState
 from models.synthesis import SynthesisOutput
@@ -53,9 +46,8 @@ def run_synthesis(state: SOCInvestigationState) -> dict:
     (only the keys it touches) to avoid LangGraph reducer duplication bugs.
     """
     try:
-        with open("config/thresholds.yaml", "r") as f:
-            thresholds = yaml.safe_load(f)["escalation_policy"]
-    except Exception:
+        thresholds = load_yaml("thresholds.yaml")["escalation_policy"]
+    except (OSError, KeyError):
         thresholds = {"approval_required_threshold": 0.80, "uncertain_threshold": 0.65}
 
     alert     = state.get("alert_raw", {})
@@ -86,11 +78,11 @@ def run_synthesis(state: SOCInvestigationState) -> dict:
         HumanMessage(content=f"Synthesize a final verdict from this aggregated evidence:\n\n{evidence_summary}")
     ])
 
-    parsed = _parse_json_response(response.content)
-    verdict               = parsed.get("verdict") or "needs_investigation"
-    confidence             = float(parsed.get("confidence", 0.5))
-    remediation_required   = bool(parsed.get("remediation_required", False))
-    escalation_reason      = parsed.get("escalation_reason")
+    parsed = parse_json_response(response.content)
+    verdict              = parsed.get("verdict") or "needs_investigation"
+    confidence           = float(parsed.get("confidence", 0.5))
+    remediation_required = bool(parsed.get("remediation_required", False))
+    escalation_reason    = parsed.get("escalation_reason")
 
     if remediation_required and confidence >= thresholds["approval_required_threshold"]:
         escalation_reason = escalation_reason or "High-confidence actionable verdict requires HITL approval"
@@ -112,17 +104,3 @@ def run_synthesis(state: SOCInvestigationState) -> dict:
         "escalation_flag": escalation_reason is not None,
         "agents_completed": ["reasoning_synthesis"],
     }
-
-
-def _parse_json_response(content: str) -> dict:
-    """Extract and parse the first JSON object from an LLM response string."""
-    try:
-        return json.loads(content.strip())
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", content, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-    return {}

@@ -25,21 +25,16 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
-# Built from this file's own location, same convention as rag_update.py,
-# so it resolves correctly regardless of the caller's current working
-# directory.
 _PAIRS_DIR = Path(__file__).resolve().parents[2] / "data" / "dpo_pairs"
 
-# state output key -> agent role name. Mirrors eval/override_rate.py's
-# field_to_role table and the real data-dependency topology documented in
-# orchestrator/graph.py.
+# state output key -> agent role name (shared with eval/override_rate.py).
 ROLE_OUTPUT_KEYS: dict[str, str] = {
     "triage_output":    "triage",
     "log_output":       "log_investigator",
-    "cti_output":        "cti_enrichment",
-    "attck_output":       "attck_mapper",
-    "synthesis_output":   "reasoning_synthesis",
-    "report_output":      "report_generator",
+    "cti_output":       "cti_enrichment",
+    "attck_output":     "attck_mapper",
+    "synthesis_output": "reasoning_synthesis",
+    "report_output":    "report_generator",
 }
 
 

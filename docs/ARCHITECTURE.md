@@ -36,7 +36,9 @@ Orchestrator agent  (LangGraph StateGraph; task routing, priority scoring, failu
      (approve / modify / reject / escalate; the ONLY code
       path allowed to populate `approved_by`. FastAPI app
       also serves the analyst dashboard at GET /ui, with
-      `/` redirecting there -- no separate frontend server.)
+      `/` redirecting there -- no separate frontend server.
+      Each investigation carries an `sla_deadline` derived
+      from its triage severity, config/thresholds.yaml.)
                           |
         +-----------------+-----------------+
         v                 v                  v

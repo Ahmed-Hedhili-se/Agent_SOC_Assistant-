@@ -7,26 +7,30 @@ __pycache__/
 *$py.class
 *.so
 .Python
+.pytest_cache/
 
-# Virtual Environments
+# Virtual environments
 .venv/
 venv/
 ENV/
 env/
 
-# IDEs and Editors
+# IDEs and editors
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 
-# Environment variables / Secrets
+# Environment variables / secrets
 .env
 .env.*
 
-# Application Data & Logs (preserve directory structure but ignore files)
+# Application data & logs (keep the directory structure and the bundled
+# sample alerts used by run_pipeline.py and the test suite)
 /soc-assistant/data/alerts/*
 !/soc-assistant/data/alerts/.gitkeep
+!/soc-assistant/data/alerts/sample_alerts.json
 /soc-assistant/data/logs/*
 !/soc-assistant/data/logs/.gitkeep
 

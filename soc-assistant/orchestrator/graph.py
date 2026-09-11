@@ -9,17 +9,17 @@ Routing logic:
 """
 from __future__ import annotations
 
-import yaml
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
+from config import load_yaml
 from state.investigation import SOCInvestigationState
-from agents.triage         import run_triage_agent
+from agents.triage           import run_triage_agent
 from agents.log_investigator import run_log_investigator
 from agents.cti_enrichment   import run_cti_enrichment
-from agents.attck_mapper      import run_attck_mapper
-from agents.synthesis         import run_synthesis
-from agents.report_generator  import run_report_generator
+from agents.attck_mapper     import run_attck_mapper
+from agents.synthesis        import run_synthesis
+from agents.report_generator import run_report_generator
 
 
 # -- Side-channel notification stub (replace with WebSocket in production) --
@@ -33,10 +33,9 @@ def _push_fast_path_alert(state: SOCInvestigationState) -> None:
 # -- Threshold loader ---------------------------------------------------------
 def _load_fast_path_thresholds() -> tuple[float, float]:
     try:
-        with open("config/thresholds.yaml", "r") as f:
-            cfg = yaml.safe_load(f)["fast_path"]
+        cfg = load_yaml("thresholds.yaml")["fast_path"]
         return float(cfg["min_severity"]), float(cfg["min_confidence"])
-    except Exception:
+    except (OSError, KeyError, TypeError, ValueError):
         return 9.0, 0.90
 
 
@@ -50,9 +49,12 @@ def route_after_triage(state: SOCInvestigationState) -> list[str]:
     severity = triage.get("severity", 0.0)
     category = triage.get("category", "")
 
-    # Fast-path side-channel notification
+    # Fast-path side-channel notification. The pipeline-wide confidence_score
+    # is only set by synthesis, so at this point triage's own confidence
+    # (1 - false-positive probability) is the signal to use.
     min_sev, min_conf = _load_fast_path_thresholds()
-    if severity >= min_sev and state.get("confidence_score", 0.0) >= min_conf:
+    triage_confidence = 1.0 - triage.get("fp_probability", 1.0)
+    if severity >= min_sev and triage_confidence >= min_conf:
         _push_fast_path_alert(state)
 
     # Identity-only: skip log investigator (no endpoint telemetry available)

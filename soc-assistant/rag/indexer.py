@@ -3,15 +3,12 @@ rag/indexer.py
 
 Downloads and indexes MITRE ATT&CK enterprise techniques into Store 1.
 
-Two bugs fixed relative to the original version:
-  1. `from .stores import attck_store` referenced a module that doesn't
-     exist (rag/stores.py) -- fixed to use the real lazy getter,
-     `from rag.store_attck import get_attck_store`.
-  2. The network call had no timeout and no error handling, so a slow or
-     unreachable connection would hang indefinitely / crash ungracefully.
-     It now uses a timeout and degrades to a no-op with a clear message
-     rather than raising, since a knowledge-base seeding step failing
-     should not be allowed to take down the whole pipeline.
+A failed download degrades to a no-op with a clear message rather than
+raising -- a knowledge-base seeding step should never take down the
+pipeline.
+
+Usage (from soc-assistant/):
+    python -m rag.indexer
 """
 from __future__ import annotations
 
@@ -56,5 +53,9 @@ def index_attck(timeout_seconds: int = 30) -> int:
         [d["content"] for d in documents],
         metadatas=[d["metadata"] for d in documents],
     )
-    print(f"Indexed {len(documents)} ATT&CK techniques")
+    print(f"[indexer] Indexed {len(documents)} ATT&CK techniques.")
     return len(documents)
+
+
+if __name__ == "__main__":
+    index_attck()

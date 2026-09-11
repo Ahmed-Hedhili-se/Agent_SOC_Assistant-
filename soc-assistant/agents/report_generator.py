@@ -5,16 +5,12 @@ Report Generator agent -- final node in the pipeline.
 Calls the configured LLM (see config/provider.py) to generate a structured
 incident report with remediation proposals based on the complete
 investigation findings.
-
-Returns a partial update, same reasoning as agents/synthesis.py.
 """
 from __future__ import annotations
 
-import json
-import re
-
 from langchain_core.messages import SystemMessage, HumanMessage
 
+from agents._llm import parse_json_response
 from config.provider import get_provider
 from state.investigation import SOCInvestigationState
 
@@ -84,7 +80,7 @@ def run_report_generator(state: SOCInvestigationState) -> dict:
         HumanMessage(content=f"Generate the incident report for this completed investigation:\n\n{investigation_summary}")
     ])
 
-    parsed = _parse_json_response(response.content)
+    parsed = parse_json_response(response.content)
 
     # Ensure every remediation proposal explicitly requires_approval=True (HITL invariant)
     proposals = parsed.get("remediation_proposals", [])
@@ -106,17 +102,3 @@ def run_report_generator(state: SOCInvestigationState) -> dict:
         "report_output": report,
         "agents_completed": ["report_generator"],
     }
-
-
-def _parse_json_response(content: str) -> dict:
-    """Extract and parse the first JSON object from an LLM response string."""
-    try:
-        return json.loads(content.strip())
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", content, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-    return {}

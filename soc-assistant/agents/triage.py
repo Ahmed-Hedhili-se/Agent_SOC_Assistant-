@@ -6,11 +6,9 @@ Calls the configured LLM (see config/provider.py) and returns a structured Triag
 """
 from __future__ import annotations
 
-import json
-import re
-
 from langchain_core.messages import SystemMessage, HumanMessage
 
+from agents._llm import parse_json_response
 from config.provider import get_provider
 from state.investigation import SOCInvestigationState
 from schemas.agent_io import TriageOutput
@@ -55,7 +53,7 @@ def run_triage_agent(state: SOCInvestigationState) -> dict:
         HumanMessage(content=f"Analyze this security alert:\n\n{alert_context}")
     ])
 
-    parsed = _parse_json_response(response.content)
+    parsed = parse_json_response(response.content)
     output = TriageOutput(
         severity=float(parsed.get("severity", 5.0)),
         fp_probability=float(parsed.get("fp_probability", 0.5)),
@@ -67,17 +65,3 @@ def run_triage_agent(state: SOCInvestigationState) -> dict:
         "triage_output": output.model_dump(),
         "agents_completed": ["triage"],
     }
-
-
-def _parse_json_response(content: str) -> dict:
-    """Extract and parse the first JSON object from an LLM response string."""
-    try:
-        return json.loads(content.strip())
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", content, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-    return {}

@@ -8,3 +8,11 @@ fast_path:
 escalation_policy:
   approval_required_threshold: 0.80
   uncertain_threshold: 0.65
+
+# Analyst response SLA, by triage severity (first matching band wins).
+# Drives the `sla_deadline` exposed by the HITL API.
+sla_minutes:
+  - {min_severity: 9.0, minutes: 15}    # critical
+  - {min_severity: 7.0, minutes: 60}    # high
+  - {min_severity: 4.0, minutes: 240}   # medium
+  - {min_severity: 0.0, minutes: 1440}  # low

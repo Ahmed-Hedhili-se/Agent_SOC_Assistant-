@@ -9,29 +9,18 @@ Tests:
   3. Routing: malware triggers log_investigator
   4. HITL safety gate: write tools reject missing approved_by
   5. Full end-to-end pipeline for each of the sample alerts
-  6. Override rate calculation
+  6. HITL SLA deadline per severity band
+  7. Override rate calculation
 """
 from __future__ import annotations
 
 import json
-import os
-import sys
-import pytest
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
-# Enable mock embeddings for testing to avoid heavy downloads and network dependencies
-os.environ["SOC_ASSISTANT_MOCK_EMBEDDINGS"] = "1"
-# No live Ollama/vLLM server in CI -- get_provider() returns a
-# deterministic mock completion per role instead (see config/provider.py).
-os.environ["SOC_ASSISTANT_MOCK_LLM"] = "1"
+import pytest
 
-# Ensure soc-assistant is on the path
-SYS_PATH = Path(__file__).parent.parent
-if str(SYS_PATH) not in sys.path:
-    sys.path.insert(0, str(SYS_PATH))
-
-os.chdir(SYS_PATH)  # so config/thresholds.yaml is readable
+SAMPLE_ALERTS_PATH = Path(__file__).resolve().parent.parent / "data" / "alerts" / "sample_alerts.json"
 
 
 # ---------------------------------------------------------------------------
@@ -46,8 +35,7 @@ def soc_graph():
 
 @pytest.fixture(scope="session")
 def sample_alerts():
-    path = Path("data/alerts/sample_alerts.json")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(SAMPLE_ALERTS_PATH.read_text(encoding="utf-8"))
 
 
 def _make_state(alert: dict) -> dict:
@@ -206,7 +194,23 @@ def test_full_pipeline(soc_graph, sample_alerts, alert_index):
 
 
 # ---------------------------------------------------------------------------
-# Test 6: Override rate calculation
+# Test 6: HITL SLA deadline
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("severity,expected", [
+    (9.5, "2026-07-27T08:15:00+00:00"),   # critical -> 15 min
+    (7.0, "2026-07-27T09:00:00+00:00"),   # high     -> 60 min
+    (1.0, "2026-07-28T08:00:00+00:00"),   # low      -> 24 h
+])
+def test_sla_deadline_follows_severity_band(severity, expected):
+    from hitl.api import compute_sla_deadline
+
+    state = {"alert_timestamp": "2026-07-27T08:00:00Z", "triage_output": {"severity": severity}}
+    assert compute_sla_deadline(state) == expected
+
+
+# ---------------------------------------------------------------------------
+# Test 7: Override rate calculation
 # ---------------------------------------------------------------------------
 
 def test_override_rate_by_role():
