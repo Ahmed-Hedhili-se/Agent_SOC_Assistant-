@@ -335,7 +335,7 @@ def run_benchmark(
             f.flush()
             status = f"ERROR {error}" if error else ("HIT" if row["exact"]["recall"] else "miss")
             print(f"[{i}/{len(alerts)}] {alert['alert_id']} expected={row['expected']} "
-                  f"predicted={row['predicted']} {latency:.1f}s {status}")
+                  f"predicted={row['predicted']} {latency:.1f}s {status}", flush=True)
 
     summary = summarize(rows, system=system, model=model, dataset=Path(dataset_path).name)
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
