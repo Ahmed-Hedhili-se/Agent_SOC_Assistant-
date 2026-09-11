@@ -130,6 +130,27 @@ pytest -v
 
 The suite runs fully offline (mock embeddings + mock LLM) and covers graph routing, parallel fan-out regressions, the approval gate on write tools, RAG wiring, the HITL decision flow, SLA deadlines, and the DPO data pipeline.
 
+## Benchmark: ATT&CK technique mapping
+
+`eval/attck_benchmark.py` measures how accurately the system maps security events to MITRE ATT&CK techniques. Ground truth comes from ATT&CK's own procedure examples (pinned to release v15.1): each real-world procedure description becomes an alert, and its technique ID is the answer. Citations, links and technique IDs are stripped so the answer never leaks. The dataset (50 examples, 50 distinct techniques) is in `data/benchmarks/attck_procedures.json`.
+
+Three systems are compared using the same model:
+
+| System | What runs |
+|---|---|
+| `baseline` | A single direct LLM prompt, no tools or retrieval |
+| `mapper` | The ATT&CK Mapper agent (RAG over the ATT&CK knowledge base + LLM) |
+| `pipeline` | The full multi-agent graph (the mapper also uses triage's category) |
+
+```bash
+cd soc-assistant
+python -m eval.attck_benchmark run --system baseline
+python -m eval.attck_benchmark run --system mapper
+python -m eval.attck_benchmark report     # table of all completed runs
+```
+
+Results (precision, recall and F1 at exact and parent-technique level, plus latency) are written to `eval/results/`.
+
 ## Configuration
 
 | File | Purpose |
@@ -142,6 +163,7 @@ The suite runs fully offline (mock embeddings + mock LLM) and covers graph routi
 | Environment variable | Effect |
 |---|---|
 | `SOC_ASSISTANT_MOCK_LLM=1` | Deterministic mock completions instead of calling an LLM |
+| `SOC_ASSISTANT_MODEL=<id>` | Override the primary model of every role (e.g. for model comparisons) |
 | `SOC_ASSISTANT_MOCK_EMBEDDINGS=1` | Zero-vector embedder instead of downloading a sentence-transformer |
 | `GROK_API_KEY` | API key for the hosted Grok fallback |
 

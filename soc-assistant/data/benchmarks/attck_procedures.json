@@ -1,0 +1,652 @@
+[
+  {
+    "alert_id": "ATTCK-BENCH-001",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Aquatic Panda has used DLL search-order hijacking to load `exe`, `dll`, and `dat` files into memory.",
+    "expected_techniques": [
+      "T1574.001"
+    ],
+    "technique_name": "DLL Search Order Hijacking",
+    "attck_relationship_id": "relationship--38230234-1111-41cf-aa6b-b107577dad61"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-002",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "APT41 used svchost.exe and Net to execute a system service installed to launch a Cobalt Strike BEACON loader.",
+    "expected_techniques": [
+      "T1569.002"
+    ],
+    "technique_name": "Service Execution",
+    "attck_relationship_id": "relationship--84dc2fd1-a443-4ce6-866a-c58cffc1b0f3"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-003",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Volt Typhoon has used the built-in netsh `port proxy` command to create proxies on compromised systems to facilitate access.",
+    "expected_techniques": [
+      "T1090.001"
+    ],
+    "technique_name": "Internal Proxy",
+    "attck_relationship_id": "relationship--828d0030-009d-4612-ae30-9dfa3d139e26"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-004",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Gold Dragon collects endpoint information using the systeminfo command.",
+    "expected_techniques": [
+      "T1082"
+    ],
+    "technique_name": "System Information Discovery",
+    "attck_relationship_id": "relationship--c1544dec-4586-466a-b730-862c06e9e3c7"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-005",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Small Sieve can obtain the id of a logged in user.",
+    "expected_techniques": [
+      "T1033"
+    ],
+    "technique_name": "System Owner/User Discovery",
+    "attck_relationship_id": "relationship--82927a23-3e5e-4892-b788-c35cc6e649a5"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-006",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "The White Company has checked for specific antivirus products on the target\u2019s computer, including Kaspersky, Quick Heal, AVG, BitDefender, Avira, Sophos, Avast!, and ESET.",
+    "expected_techniques": [
+      "T1518.001"
+    ],
+    "technique_name": "Security Software Discovery",
+    "attck_relationship_id": "relationship--2a8c6029-7714-437a-87a2-bc91067575e6"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-007",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Magic Hound has copied tools within a compromised network using RDP.",
+    "expected_techniques": [
+      "T1570"
+    ],
+    "technique_name": "Lateral Tool Transfer",
+    "attck_relationship_id": "relationship--9e0ca319-ad80-48f8-812e-fe7f9e0e77c4"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-008",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Saint Bot has created a scheduled task named \"Maintenance\" to establish persistence.",
+    "expected_techniques": [
+      "T1053.005"
+    ],
+    "technique_name": "Scheduled Task",
+    "attck_relationship_id": "relationship--5dadf8c9-3e69-4e5f-9dc2-829e6601aa11"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-009",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Magic Hound malware can list running processes.",
+    "expected_techniques": [
+      "T1057"
+    ],
+    "technique_name": "Process Discovery",
+    "attck_relationship_id": "relationship--a4c59c09-2abd-4c49-8156-0ccc9214b66e"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-010",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "OilRig has used net group /domain, net group \u201cdomain admins\u201d /domain, and net group \u201cExchange Trusted Subsystem\u201d /domain to find domain group permission settings.",
+    "expected_techniques": [
+      "T1069.002"
+    ],
+    "technique_name": "Domain Groups",
+    "attck_relationship_id": "relationship--409581f2-270d-43ce-8044-34bc09874548"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-011",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "A Patchwork payload was packed with UPX.",
+    "expected_techniques": [
+      "T1027.002"
+    ],
+    "technique_name": "Software Packing",
+    "attck_relationship_id": "relationship--891a97f1-d3e2-45ff-a079-43dcad21a175"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-012",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "MCMD can use HTTPS in communication with C2 web servers.",
+    "expected_techniques": [
+      "T1071.001"
+    ],
+    "technique_name": "Web Protocols",
+    "attck_relationship_id": "relationship--7692e54c-eb9e-4051-afab-e810dff4cd77"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-013",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "APT33 has used AES for encryption of command and control traffic.",
+    "expected_techniques": [
+      "T1573.001"
+    ],
+    "technique_name": "Symmetric Cryptography",
+    "attck_relationship_id": "relationship--e053cb07-3e4d-41a1-85a6-38cd2ac0e6ea"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-014",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Sardonic has the ability to send a random 64-byte RC4 key to communicate with actor-controlled C2 servers by using an RSA public key.",
+    "expected_techniques": [
+      "T1573.002"
+    ],
+    "technique_name": "Asymmetric Cryptography",
+    "attck_relationship_id": "relationship--d7eb1606-b003-41ce-81b3-a1c4d5d5e4d7"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-015",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Hildegard has deleted scripts after execution.",
+    "expected_techniques": [
+      "T1070.004"
+    ],
+    "technique_name": "File Deletion",
+    "attck_relationship_id": "relationship--33d66657-3e4c-430b-ae40-a9d310f39f13"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-016",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "TinyZBot can create a shortcut in the Windows startup folder for persistence.",
+    "expected_techniques": [
+      "T1547.009"
+    ],
+    "technique_name": "Shortcut Modification",
+    "attck_relationship_id": "relationship--8ce2219f-6c25-46a2-8215-a78871e2773a"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-017",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "GravityRAT supports file encryption (AES with the key \"lolomycin2017\").",
+    "expected_techniques": [
+      "T1027.013"
+    ],
+    "technique_name": "Encrypted/Encoded File",
+    "attck_relationship_id": "relationship--394d53b3-da1c-44b4-8abf-e1092f34c8be"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-018",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Volt Typhoon has used compromised domain accounts to authenticate to devices on compromised networks.",
+    "expected_techniques": [
+      "T1078.002"
+    ],
+    "technique_name": "Domain Accounts",
+    "attck_relationship_id": "relationship--d51a3ee4-4542-4334-9989-249aa107c261"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-019",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Ferocious Kitten has acquired domains imitating legitimate sites.",
+    "expected_techniques": [
+      "T1583.001"
+    ],
+    "technique_name": "Domains",
+    "attck_relationship_id": "relationship--e9375a8c-4574-40a9-a3c2-a9fe036928a6"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-020",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Kasidet has the ability to change firewall settings to allow a plug-in to be downloaded.",
+    "expected_techniques": [
+      "T1562.004"
+    ],
+    "technique_name": "Disable or Modify System Firewall",
+    "attck_relationship_id": "relationship--f81df2c8-1edd-4734-a1c9-cca6e4c56607"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-021",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "APT32 has cleared select event log entries.",
+    "expected_techniques": [
+      "T1070.001"
+    ],
+    "technique_name": "Clear Windows Event Logs",
+    "attck_relationship_id": "relationship--885cd1fe-9e7b-4e94-a6cc-01bb8ad655fd"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-022",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "LAPSUS$ has shut down virtual machines from within a victim's on-premise VMware ESXi infrastructure.",
+    "expected_techniques": [
+      "T1489"
+    ],
+    "technique_name": "Service Stop",
+    "attck_relationship_id": "relationship--6e54e834-521f-4da8-b3ae-963185496a60"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-023",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Uroburos can communicate through custom methodologies for UDP, ICMP, and TCP that use distinct sessions to ride over the legitimate protocols.",
+    "expected_techniques": [
+      "T1095"
+    ],
+    "technique_name": "Non-Application Layer Protocol",
+    "attck_relationship_id": "relationship--3717f0c2-0963-4b6c-9603-bb01c06b9fe6"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-024",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "FIN13 has exploited known vulnerabilities such as CVE-2017-1000486 (Primefaces Application Expression Language Injection), CVE-2015-7450 (WebSphere Application Server SOAP Deserialization Exploit), CVE-2010-5326 (SAP NewWeaver Invoker Servlet Exploit), and EDB-ID-24963 (SAP NetWeaver ConfigServlet Remote Code Execution) to gain initial access.",
+    "expected_techniques": [
+      "T1190"
+    ],
+    "technique_name": "Exploit Public-Facing Application",
+    "attck_relationship_id": "relationship--4f5f1da9-9396-4b66-a67b-c08470924882"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-025",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Linux Rabbit brute forces SSH passwords in order to attempt to gain access and install its malware onto the server.",
+    "expected_techniques": [
+      "T1110.003"
+    ],
+    "technique_name": "Password Spraying",
+    "attck_relationship_id": "relationship--1cf57140-fe45-4c26-8946-071252ae8276"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-026",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Bazar can inject into a target process including Svchost, Explorer, and cmd using process hollowing.",
+    "expected_techniques": [
+      "T1055.012"
+    ],
+    "technique_name": "Process Hollowing",
+    "attck_relationship_id": "relationship--ea187577-25ce-458f-a26b-9ee71d3879fd"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-027",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "LAPSUS$ has removed a targeted organization's global admin accounts to lock the organization out of all access.",
+    "expected_techniques": [
+      "T1531"
+    ],
+    "technique_name": "Account Access Removal",
+    "attck_relationship_id": "relationship--a2798404-09a6-4882-8226-257fe55f788c"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-028",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Inception has ensured persistence at system boot by setting the value regsvr32 %path%\\ctfmonrn.dll /s.",
+    "expected_techniques": [
+      "T1218.010"
+    ],
+    "technique_name": "Regsvr32",
+    "attck_relationship_id": "relationship--cab50f6d-3621-4429-8c9a-803df15f4e75"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-029",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "APT37 has used the command-line interface.",
+    "expected_techniques": [
+      "T1059.003"
+    ],
+    "technique_name": "Windows Command Shell",
+    "attck_relationship_id": "relationship--cae6bbd0-d00e-4cc4-872a-d3ac9cc97684"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-030",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "During CostaRicto, the threat actors downloaded malware and tools onto a compromised host.",
+    "expected_techniques": [
+      "T1105"
+    ],
+    "technique_name": "Ingress Tool Transfer",
+    "attck_relationship_id": "relationship--16cdc452-d4dc-43f7-be53-dc6b62135d20"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-031",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Ragnar Locker may attempt to connect to removable drives and mapped network drives.",
+    "expected_techniques": [
+      "T1120"
+    ],
+    "technique_name": "Peripheral Device Discovery",
+    "attck_relationship_id": "relationship--ea79bf34-c1ba-4523-879f-441d6a4a9e5e"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-032",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Turla has developed its own unique malware for use in operations.",
+    "expected_techniques": [
+      "T1587.001"
+    ],
+    "technique_name": "Malware",
+    "attck_relationship_id": "relationship--a8cfb738-65ac-4d5a-8ef7-d3a21eab02ea"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-033",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Keydnap uses Python for scripting to execute additional commands.",
+    "expected_techniques": [
+      "T1059.006"
+    ],
+    "technique_name": "Python",
+    "attck_relationship_id": "relationship--e2dd48c1-c960-4f6f-ad99-5b2aa7463e68"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-034",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Turla has frequently used compromised WordPress sites for C2 infrastructure.",
+    "expected_techniques": [
+      "T1584.006"
+    ],
+    "technique_name": "Web Services",
+    "attck_relationship_id": "relationship--01b5af07-512b-4b60-ba2d-5c185b80fb5f"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-035",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "PowerStallion uses PowerShell loops to iteratively check for available commands in its OneDrive C2 server.",
+    "expected_techniques": [
+      "T1059.001"
+    ],
+    "technique_name": "PowerShell",
+    "attck_relationship_id": "relationship--392ae34f-3fb7-444b-a5cc-3a1ddcaa96a6"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-036",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "admin@338 has attempted to get victims to launch malicious Microsoft Word attachments delivered via spearphishing emails.",
+    "expected_techniques": [
+      "T1204.002"
+    ],
+    "technique_name": "Malicious File",
+    "attck_relationship_id": "relationship--e752cfb4-7865-4590-b355-eb1f1b851c5e"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-037",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "WinMM is usually configured with primary and backup domains for C2 communications.",
+    "expected_techniques": [
+      "T1008"
+    ],
+    "technique_name": "Fallback Channels",
+    "attck_relationship_id": "relationship--70a93fc8-83c0-4407-8224-ae447af1235a"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-038",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Gamaredon Group has tested connectivity between a compromised machine and a C2 server using Ping with commands such as `CSIDL_SYSTEM\\cmd.exe /c ping -n 1`.",
+    "expected_techniques": [
+      "T1016.001"
+    ],
+    "technique_name": "Internet Connection Discovery",
+    "attck_relationship_id": "relationship--5fc69974-db3b-4475-b37b-07c4731b1a6f"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-039",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Earth Lusca has used WinRAR to compress stolen files into an archive prior to exfiltration.",
+    "expected_techniques": [
+      "T1560.001"
+    ],
+    "technique_name": "Archive via Utility",
+    "attck_relationship_id": "relationship--d0a3d891-2555-45eb-8aaf-99b86372607b"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-040",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "When a document is found matching one of the extensions in the configuration, TINYTYPHON uploads it to the C2 server.",
+    "expected_techniques": [
+      "T1020"
+    ],
+    "technique_name": "Automated Exfiltration",
+    "attck_relationship_id": "relationship--ff922dd7-21b6-4f95-bb8b-080d0dee6655"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-041",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Kimsuky has renamed malware to legitimate names such as ESTCommon.dll or patch.dll.",
+    "expected_techniques": [
+      "T1036.005"
+    ],
+    "technique_name": "Match Legitimate Name or Location",
+    "attck_relationship_id": "relationship--dbbef446-8cc0-43cc-bfae-6fc6d7310e67"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-042",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Axiom has used VPS hosting providers in targeting of intended victims.",
+    "expected_techniques": [
+      "T1583.003"
+    ],
+    "technique_name": "Virtual Private Server",
+    "attck_relationship_id": "relationship--a12a296d-3cdb-4a49-840a-4ecd073b5312"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-043",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "HAFNIUM has collected IP information via IPInfo.",
+    "expected_techniques": [
+      "T1016"
+    ],
+    "technique_name": "System Network Configuration Discovery",
+    "attck_relationship_id": "relationship--be93a442-915b-4923-b7dd-0a20098fe264"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-044",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "During Operation Honeybee, stolen data was copied into a text file using the format `From (- --).txt` prior to compression, encoding, and exfiltration.",
+    "expected_techniques": [
+      "T1074.001"
+    ],
+    "technique_name": "Local Data Staging",
+    "attck_relationship_id": "relationship--3c3646c8-56a5-443a-a71f-a32ea6269750"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-045",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Pacu leverages the AWS CLI for its operations.",
+    "expected_techniques": [
+      "T1059.009"
+    ],
+    "technique_name": "Cloud API",
+    "attck_relationship_id": "relationship--cea62da0-1d9f-40d8-adfb-ee40f6b1a345"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-046",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "During Operation Sharpshooter, a first-stage downloader installed Rising Sun to `%Startup%\\mssync.exe` on a compromised host.",
+    "expected_techniques": [
+      "T1547.001"
+    ],
+    "technique_name": "Registry Run Keys / Startup Folder",
+    "attck_relationship_id": "relationship--b5baa306-e027-4000-9338-0d9df55c5040"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-047",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "Pony has used the NetUserEnum function to enumerate local accounts.",
+    "expected_techniques": [
+      "T1087.001"
+    ],
+    "technique_name": "Local Account",
+    "attck_relationship_id": "relationship--d5ecfa68-2027-4dd5-adf0-1eb82463cfc5"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-048",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "WastedLocker's custom crypter, CryptOne, leveraged the VirtualAlloc() API function to help execute the payload.",
+    "expected_techniques": [
+      "T1106"
+    ],
+    "technique_name": "Native API",
+    "attck_relationship_id": "relationship--abbd6d5f-03a0-4e3c-b362-178879cfa016"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-049",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "PlugX has a module to enumerate drives and find files recursively.",
+    "expected_techniques": [
+      "T1083"
+    ],
+    "technique_name": "File and Directory Discovery",
+    "attck_relationship_id": "relationship--07702379-2d40-48ae-a077-d68e0da5e4be"
+  },
+  {
+    "alert_id": "ATTCK-BENCH-050",
+    "source": "SIEM",
+    "category": "unknown",
+    "severity": 5.0,
+    "timestamp": "2026-01-01T00:00:00Z",
+    "raw_log": "APT5 has copied and exfiltrated the SAM Registry hive from targeted systems.",
+    "expected_techniques": [
+      "T1003.002"
+    ],
+    "technique_name": "Security Account Manager",
+    "attck_relationship_id": "relationship--8fdfcd23-4608-4a40-98fc-2e4baa8d6a41"
+  }
+]

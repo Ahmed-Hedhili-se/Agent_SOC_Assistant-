@@ -14,6 +14,9 @@ via fallback -- if their local endpoint is unreachable, get_provider()
 raises PrivacyConstraintViolation rather than silently falling back to a
 hosted API.
 
+Set SOC_ASSISTANT_MODEL=<model_id> to override the primary model of every
+role (the endpoint stays as configured).
+
 Set SOC_ASSISTANT_MOCK_LLM=1 to skip the network entirely and get a
 deterministic, empty-but-valid completion per role -- used by the test
 suite / CI / offline demos, the same convention as
@@ -97,7 +100,9 @@ def get_provider(role: str):
 
     provider_name = role_cfg["provider"]
     endpoint      = role_cfg["endpoint"]
-    model_id      = role_cfg["model_id"]
+    # SOC_ASSISTANT_MODEL swaps the primary model for every role at once
+    # (e.g. for model comparisons) without editing models.yaml.
+    model_id      = os.environ.get("SOC_ASSISTANT_MODEL") or role_cfg["model_id"]
 
     try:
         _health_check(endpoint)
