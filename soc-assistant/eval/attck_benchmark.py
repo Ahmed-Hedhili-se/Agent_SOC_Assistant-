@@ -26,11 +26,13 @@ Usage (from soc-assistant/):
     python -m eval.attck_benchmark run --system mapper
     python -m eval.attck_benchmark run --system pipeline
     python -m eval.attck_benchmark report
+    python -m eval.attck_benchmark compare --a baseline --b mapper
 """
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import random
 import re
@@ -351,6 +353,49 @@ def load_summaries(results_dir: Path = RESULTS_DIR) -> list[dict]:
     ]
 
 
+def mcnemar_exact_p(only_a: int, only_b: int) -> float:
+    """Two-sided exact McNemar test on the discordant pair counts."""
+    n = only_a + only_b
+    if n == 0:
+        return 1.0
+    k = min(only_a, only_b)
+    return min(1.0, 2 * sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n)
+
+
+def _latest_predictions(system: str, model: str, results_dir: Path) -> dict[str, dict]:
+    runs = sorted(
+        d for d in Path(results_dir).glob(f"*_{system}_*")
+        if (d / "summary.json").exists()
+        and json.loads((d / "summary.json").read_text(encoding="utf-8"))["model"] == model
+    )
+    if not runs:
+        raise FileNotFoundError(f"No completed '{system}' run for model '{model}' in {results_dir}")
+    lines = (runs[-1] / "predictions.jsonl").read_text(encoding="utf-8").splitlines()
+    return {row["alert_id"]: row for row in map(json.loads, lines)}
+
+
+def compare_systems(a: str, b: str, model: str, results_dir: Path = RESULTS_DIR) -> list[dict]:
+    """Paired comparison of two systems' latest runs for *model* on the
+    examples both completed, at exact and parent level."""
+    rows_a = _latest_predictions(a, model, results_dir)
+    rows_b = _latest_predictions(b, model, results_dir)
+    shared = sorted(rows_a.keys() & rows_b.keys())
+
+    results = []
+    for level in ("exact", "parent"):
+        hit_a = {k: rows_a[k][level]["recall"] > 0 for k in shared}
+        hit_b = {k: rows_b[k][level]["recall"] > 0 for k in shared}
+        only_a = sum(hit_a[k] and not hit_b[k] for k in shared)
+        only_b = sum(hit_b[k] and not hit_a[k] for k in shared)
+        results.append({
+            "level": level, "n": len(shared),
+            f"{a}_hits": sum(hit_a.values()), f"{b}_hits": sum(hit_b.values()),
+            f"only_{a}": only_a, f"only_{b}": only_b,
+            "p_value": round(mcnemar_exact_p(only_a, only_b), 4),
+        })
+    return results
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -372,6 +417,11 @@ def main() -> None:
 
     sub.add_parser("report", help="Print a table of every completed run.")
 
+    compare = sub.add_parser("compare", help="Paired significance test (McNemar) between two systems.")
+    compare.add_argument("--a", choices=sorted(SYSTEMS), default="baseline")
+    compare.add_argument("--b", choices=sorted(SYSTEMS), default="mapper")
+    compare.add_argument("--model", default=None, help="Defaults to the configured model")
+
     args = parser.parse_args()
 
     if args.command == "build":
@@ -381,6 +431,13 @@ def main() -> None:
         print(f"Wrote {len(dataset)} examples to {args.out}")
     elif args.command == "run":
         run_benchmark(args.system, args.dataset, args.limit)
+    elif args.command == "compare":
+        model = args.model or _model_label()
+        print(f"{args.a} vs {args.b} ({model})")
+        for r in compare_systems(args.a, args.b, model):
+            print(f"  {r['level']:6} n={r['n']}: {args.a}={r[f'{args.a}_hits']} hits, "
+                  f"{args.b}={r[f'{args.b}_hits']} hits | only {args.a}={r[f'only_{args.a}']}, "
+                  f"only {args.b}={r[f'only_{args.b}']} | McNemar exact p={r['p_value']}")
     else:
         summaries = load_summaries()
         print(format_table(summaries) if summaries else "No results yet -- run a benchmark first.")

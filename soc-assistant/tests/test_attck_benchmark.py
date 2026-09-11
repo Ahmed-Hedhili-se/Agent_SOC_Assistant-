@@ -76,6 +76,29 @@ def test_score_prediction_empty_prediction():
     assert score["exact"] == {"precision": 0.0, "recall": 0.0, "f1": 0.0}
 
 
+def test_mcnemar_exact_p():
+    assert bench.mcnemar_exact_p(0, 0) == 1.0
+    assert bench.mcnemar_exact_p(5, 5) == 1.0
+    assert round(bench.mcnemar_exact_p(18, 4), 4) == 0.0043
+
+
+def test_compare_systems_pairs_latest_runs(tmp_path):
+    def write_run(name, system, hits):
+        run = tmp_path / name
+        run.mkdir()
+        (run / "summary.json").write_text(json.dumps({"system": system, "model": "m"}), encoding="utf-8")
+        rows = [{"alert_id": f"A{i}", "exact": {"recall": float(h)}, "parent": {"recall": 1.0}}
+                for i, h in enumerate(hits)]
+        (run / "predictions.jsonl").write_text("\n".join(map(json.dumps, rows)), encoding="utf-8")
+
+    write_run("1_baseline_m", "baseline", [1, 0, 0, 0])
+    write_run("1_mapper_m", "mapper", [1, 1, 1, 0])
+
+    exact, parent = bench.compare_systems("baseline", "mapper", "m", results_dir=tmp_path)
+    assert (exact["only_mapper"], exact["only_baseline"], exact["n"]) == (2, 0, 4)
+    assert parent["p_value"] == 1.0
+
+
 def test_run_benchmark_mock_writes_predictions_and_summary(tmp_path):
     dataset_path = tmp_path / "dataset.json"
     dataset_path.write_text(json.dumps(bench.build_dataset(BUNDLE)), encoding="utf-8")
