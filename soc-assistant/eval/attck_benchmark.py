@@ -215,7 +215,9 @@ def format_table(summaries: list[dict]) -> str:
 # Systems under test
 # ---------------------------------------------------------------------------
 
-_BASELINE_PROMPT = """You are a MITRE ATT&CK analyst. Map the security event below to the MITRE ATT&CK Enterprise technique IDs it demonstrates, using sub-technique IDs (e.g. T1059.001) where applicable.
+# No concrete technique ID appears in this prompt: small models copy
+# example IDs verbatim, which would unfairly lower the baseline.
+_BASELINE_PROMPT = """You are a MITRE ATT&CK analyst. Map the security event below to the MITRE ATT&CK Enterprise technique IDs it demonstrates, using sub-technique IDs where applicable (format: Txxxx or Txxxx.yyy).
 
 Respond with ONLY a JSON object in this exact format, no explanations:
 {"technique_ids": ["<technique_id>"]}"""
