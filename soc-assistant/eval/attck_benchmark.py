@@ -364,6 +364,11 @@ def mcnemar_exact_p(only_a: int, only_b: int) -> float:
     return min(1.0, 2 * sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n)
 
 
+def format_p(p: float) -> str:
+    """Render a p-value without rounding a significant result to 0.0000."""
+    return "<0.0001" if p < 0.0001 else f"{p:.4f}"
+
+
 def _latest_predictions(system: str, model: str, results_dir: Path) -> dict[str, dict]:
     runs = sorted(
         d for d in Path(results_dir).glob(f"*_{system}_*")
@@ -393,7 +398,7 @@ def compare_systems(a: str, b: str, model: str, results_dir: Path = RESULTS_DIR)
             "level": level, "n": len(shared),
             f"{a}_hits": sum(hit_a.values()), f"{b}_hits": sum(hit_b.values()),
             f"only_{a}": only_a, f"only_{b}": only_b,
-            "p_value": round(mcnemar_exact_p(only_a, only_b), 4),
+            "p_value": mcnemar_exact_p(only_a, only_b),
         })
     return results
 
@@ -439,7 +444,7 @@ def main() -> None:
         for r in compare_systems(args.a, args.b, model):
             print(f"  {r['level']:6} n={r['n']}: {args.a}={r[f'{args.a}_hits']} hits, "
                   f"{args.b}={r[f'{args.b}_hits']} hits | only {args.a}={r[f'only_{args.a}']}, "
-                  f"only {args.b}={r[f'only_{args.b}']} | McNemar exact p={r['p_value']}")
+                  f"only {args.b}={r[f'only_{args.b}']} | McNemar exact p={format_p(r['p_value'])}")
     else:
         summaries = load_summaries()
         print(format_table(summaries) if summaries else "No results yet -- run a benchmark first.")
