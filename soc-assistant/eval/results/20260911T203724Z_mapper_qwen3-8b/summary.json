@@ -1,0 +1,18 @@
+{
+  "system": "mapper",
+  "model": "qwen3:8b",
+  "dataset": "attck_procedures.json",
+  "n": 50,
+  "exact_precision": 0.46,
+  "exact_recall": 0.52,
+  "exact_f1": 0.48,
+  "parent_precision": 0.63,
+  "parent_recall": 0.64,
+  "parent_f1": 0.633,
+  "avg_predicted": 1.22,
+  "empty_rate": 0.0,
+  "errors": 0,
+  "latency_mean_s": 14.934,
+  "latency_median_s": 14.19,
+  "created_at": "2026-09-11T20:49:51.650748+00:00"
+}

@@ -1,0 +1,18 @@
+{
+  "system": "baseline",
+  "model": "glm-4.7-flash:q4_K_M",
+  "dataset": "attck_procedures.json",
+  "n": 50,
+  "exact_precision": 0.1,
+  "exact_recall": 0.14,
+  "exact_f1": 0.113,
+  "parent_precision": 0.42,
+  "parent_recall": 0.46,
+  "parent_f1": 0.433,
+  "avg_predicted": 1.28,
+  "empty_rate": 0.02,
+  "errors": 0,
+  "latency_mean_s": 23.336,
+  "latency_median_s": 19.41,
+  "created_at": "2026-09-12T13:52:40.515830+00:00"
+}

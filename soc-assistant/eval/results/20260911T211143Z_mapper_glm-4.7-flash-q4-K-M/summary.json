@@ -1,0 +1,18 @@
+{
+  "system": "mapper",
+  "model": "glm-4.7-flash:q4_K_M",
+  "dataset": "attck_procedures.json",
+  "n": 50,
+  "exact_precision": 0.463,
+  "exact_recall": 0.54,
+  "exact_f1": 0.487,
+  "parent_precision": 0.67,
+  "parent_recall": 0.68,
+  "parent_f1": 0.673,
+  "avg_predicted": 1.24,
+  "empty_rate": 0.04,
+  "errors": 0,
+  "latency_mean_s": 37.632,
+  "latency_median_s": 33.04,
+  "created_at": "2026-09-11T21:43:05.386592+00:00"
+}

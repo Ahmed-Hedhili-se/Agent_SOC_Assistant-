@@ -1,0 +1,18 @@
+{
+  "system": "baseline",
+  "model": "qwen3:8b",
+  "dataset": "attck_procedures.json",
+  "n": 50,
+  "exact_precision": 0.02,
+  "exact_recall": 0.02,
+  "exact_f1": 0.02,
+  "parent_precision": 0.24,
+  "parent_recall": 0.24,
+  "parent_f1": 0.24,
+  "avg_predicted": 1.08,
+  "empty_rate": 0.0,
+  "errors": 0,
+  "latency_mean_s": 6.126,
+  "latency_median_s": 4.63,
+  "created_at": "2026-09-12T13:33:13.252412+00:00"
+}
