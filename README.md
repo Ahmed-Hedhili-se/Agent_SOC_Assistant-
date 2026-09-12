@@ -6,6 +6,8 @@ A multi-agent Security Operations Center (SOC) assistant built with **LangGraph*
 ![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-1f6feb)
 ![FastAPI](https://img.shields.io/badge/HITL%20API-FastAPI-009688)
 
+**Benchmarked result:** grounding the ATT&CK mapper in retrieval raises exact technique accuracy from 38% to **62%** on 50 labelled ATT&CK procedure examples (gpt-oss:20b, McNemar p = 0.008), and the gain replicates across three self-hosted models — [see the benchmark](#benchmark-attck-technique-mapping).
+
 ## Design philosophy
 
 **Augmentation, not autonomy.** Agents collect evidence, correlate logs, enrich with threat intelligence, map to ATT&CK, and draft reports. **No agent can change the real environment.** Every remediation tool (`isolateHost`, `disableUserAccount`, `blockIPFirewall`, `createTicket`) requires an `approved_by` field that only the HITL decision endpoint can set — enforced in code at the tool layer, not just in prompts.
@@ -132,24 +134,54 @@ The suite runs fully offline (mock embeddings + mock LLM) and covers graph routi
 
 ## Benchmark: ATT&CK technique mapping
 
-`eval/attck_benchmark.py` measures how accurately the system maps security events to MITRE ATT&CK techniques. Ground truth comes from ATT&CK's own procedure examples (pinned to release v15.1): each real-world procedure description becomes an alert, and its technique ID is the answer. Citations, links and technique IDs are stripped so the answer never leaks. The dataset (50 examples, 50 distinct techniques) is in `data/benchmarks/attck_procedures.json`.
+Does retrieval-grounded mapping actually beat asking the model directly? `eval/attck_benchmark.py` measures it.
 
-Three systems are compared using the same model:
+**Setup.** Ground truth comes from MITRE ATT&CK's own procedure examples (release v15.1, the same release the RAG index uses): each real-world procedure description becomes an alert, and the technique it documents is the expected answer. Citations, links and technique IDs are stripped from the text, so the answer never leaks. The dataset is 50 examples covering 50 distinct techniques (35 of them sub-techniques) and is committed in `data/benchmarks/attck_procedures.json`. Scoring is reported at two levels: **exact** (T1059.001 must match T1059.001) and **parent** (T1059.001 counts as T1059). Neither prompt contains an example technique ID, since small models copy one verbatim.
 
-| System | What runs |
-|---|---|
-| `baseline` | A single direct LLM prompt, no tools or retrieval |
-| `mapper` | The ATT&CK Mapper agent (RAG over the ATT&CK knowledge base + LLM) |
-| `pipeline` | The full multi-agent graph (the mapper also uses triage's category) |
+### Retrieval vs. the same model alone
+
+| System (gpt-oss:20b) | Exact P | Exact R | Exact F1 | Parent R | Median latency |
+|---|---|---|---|---|---|
+| `baseline` — one direct LLM prompt | 0.36 | 0.38 | 0.36 | 0.62 | 5.6 s |
+| `mapper` — ATT&CK agent (RAG + LLM) | **0.54** | **0.62** | **0.56** | **0.78** | 7.5 s |
+| `pipeline` — full multi-agent graph | 0.52 | 0.62 | 0.55 | 0.76 | 35.6 s |
+
+The gain holds across three self-hosted models of different sizes and families (exact recall, 50 paired examples, two-sided exact McNemar test):
+
+| Model | Baseline | Mapper (RAG) | p (exact) | p (parent) |
+|---|---|---|---|---|
+| gpt-oss:20b | 38% | **62%** | 0.008 | 0.039 |
+| glm-4.7-flash (q4) | 14% | **54%** | <0.0001 | 0.019 |
+| qwen3:8b | 2% | **52%** | <0.0001 | <0.0001 |
+
+### What the numbers say
+
+- **Retrieval significantly improves exact technique identification for every model tested.** The effect is largest where the model's own ATT&CK knowledge is weakest: with retrieval, all three models land in a 52–62% band regardless of where they started.
+- **Most of the gain is ID precision, not comprehension.** gpt-oss:20b already identified the right parent technique 62% of the time on its own; retrieval mainly converts "roughly the right family" into the exact sub-technique ID.
+- **The full pipeline matched the mapper agent exactly** (31/50 both, p = 1.0) at ~5x the latency. For this task the accuracy comes from the retrieval-grounded agent, not from the surrounding agents.
+- **Retrieval is not free.** In 1–4 cases per model the baseline was right where the RAG-grounded agent was wrong, i.e. retrieved context can mislead. Filtering retrieved documents by relevance is the obvious next step.
+
+### Limitations
+
+- 50 examples per system: differences of a few points are within noise, and only the large gaps above are significant.
+- ATT&CK procedure descriptions are curated CTI prose, not raw SIEM logs. These numbers are an upper bound on messy production data.
+- Retrieval runs over the official technique descriptions, matched in domain and vocabulary to the test prose.
+- The pipeline row is one model, N=50. The benchmark scores **ATT&CK mapping only**: triage, correlation, synthesis and report quality are not measured, so this says nothing about whether the other agents help at *their* jobs.
+- LLM sampling is non-deterministic; single runs per cell, no repeats.
+
+### Reproduce
 
 ```bash
 cd soc-assistant
+export SOC_ASSISTANT_MOCK_EMBEDDINGS=0
+python -m rag.indexer                                     # build the ATT&CK index once
 python -m eval.attck_benchmark run --system baseline
 python -m eval.attck_benchmark run --system mapper
-python -m eval.attck_benchmark report     # table of all completed runs
+python -m eval.attck_benchmark compare --a baseline --b mapper
+python -m eval.attck_benchmark report
 ```
 
-Results (precision, recall and F1 at exact and parent-technique level, plus latency) are written to `eval/results/`.
+Raw per-example predictions and run summaries for every result above are in `eval/results/`. `python -m eval.attck_benchmark build --n 150` rebuilds a larger dataset, and `SOC_ASSISTANT_MODEL=<id>` points every role at another model.
 
 ## Configuration
 
