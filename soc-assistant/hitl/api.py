@@ -5,6 +5,7 @@ Human-in-the-Loop FastAPI backend.
 
 Endpoints:
   GET  /investigations/                -- list all active investigations
+  GET  /investigations/summaries       -- one-line summary per investigation (dashboard queue)
   GET  /investigations/{id}            -- retrieve investigation evidence before verdict
   GET  /investigations/{id}/reasoning-trace -- full synthesis reasoning trace
   GET  /investigations/{id}/report     -- return full incident report
@@ -145,6 +146,31 @@ async def list_investigations():
     return list(_load_store().keys())
 
 
+# Declared before /investigations/{id} so "summaries" is not captured as an id.
+@app.get("/investigations/summaries")
+async def list_investigation_summaries():
+    """One-line summary per investigation, for the analyst dashboard queue."""
+    summaries = []
+    for alert_id, state in _load_store().items():
+        alert = state.get("alert_raw") or {}
+        triage = state.get("triage_output") or {}
+        synthesis = state.get("synthesis_output") or {}
+        summaries.append({
+            "alert_id":        alert_id,
+            "category":        triage.get("category") or alert.get("category"),
+            "source":          alert.get("source"),
+            "timestamp":       state.get("alert_timestamp") or alert.get("timestamp"),
+            "severity":        triage.get("severity"),
+            "verdict":         synthesis.get("verdict"),
+            "confidence":      state.get("confidence_score"),
+            "escalation_flag": bool(state.get("escalation_flag")),
+            "hitl_decision":   state.get("hitl_decision"),
+            "approved_by":     state.get("approved_by"),
+            "sla_deadline":    compute_sla_deadline(state),
+        })
+    return summaries
+
+
 @app.get("/investigations/{id}")
 async def get_investigation_evidence(id: str):
     """
@@ -164,6 +190,10 @@ async def get_investigation_evidence(id: str):
         "attck_output":     state.get("attck_output"),
         "sla_deadline":     compute_sla_deadline(state),
         "agents_completed": state.get("agents_completed", []),
+        "agents_failed":    state.get("agents_failed", []),
+        "hitl_decision":    state.get("hitl_decision"),
+        "approved_by":      state.get("approved_by"),
+        "analyst_note":     state.get("analyst_note"),
     }
 
 

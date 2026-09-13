@@ -184,3 +184,28 @@ def test_attck_mapper_does_not_touch_sibling_branch_outputs():
     source = inspect.getsource(attck_mapper)
     assert '"log_output"' not in source
     assert '"cti_output"' not in source
+
+
+def test_get_technique_detail_uses_exact_id_lookup(monkeypatch):
+    """A similarity search on a bare ID returns unrelated techniques; the
+    detail must come from an exact technique_id metadata match."""
+    import rag.store_attck as store_attck
+    from mcp_tools.rag.api import getTechniqueDetail
+
+    class FakeStore:
+        def get(self, where=None, limit=None):
+            assert where == {"technique_id": "T1078"}
+            return {
+                "documents": ["\n  Technique: T1078 -- Valid Accounts\n  Tactic: initial-access, persistence\n  Description: ..."],
+                "metadatas": [{"technique_id": "T1078"}],
+            }
+
+        def similarity_search(self, *args, **kwargs):
+            raise AssertionError("technique detail must not use similarity search")
+
+    monkeypatch.setattr(store_attck, "get_attck_store", lambda: FakeStore())
+    detail = getTechniqueDetail("T1078")
+
+    assert detail["name"] == "Valid Accounts"
+    assert detail["tactic"] == "initial-access, persistence"
+    assert detail["metadata"] == {"technique_id": "T1078"}

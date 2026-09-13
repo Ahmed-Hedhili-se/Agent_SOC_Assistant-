@@ -7,6 +7,7 @@ or unavailable (offline, no embedding backend, etc).
 """
 from __future__ import annotations
 
+import re
 from typing import Optional
 
 # Built-in fallback: category / keyword -> technique mapping
@@ -71,19 +72,35 @@ def retrieveCTIContext(category: Optional[str], keywords: Optional[list[str]] = 
     }]
 
 
+_TECHNIQUE_HEADER_RE = re.compile(r"Technique:\s*T\d{4}(?:\.\d{3})?\s*--\s*(.+)")
+_TACTIC_LINE_RE = re.compile(r"Tactic:\s*(.+)")
+
+
 def getTechniqueDetail(technique_id: str) -> dict:
     """
     Return detail for a MITRE ATT&CK technique.
-    First tries the ATT&CK Chroma store (via get_attck_store()); falls
-    back to the built-in table.
+
+    Looks the technique up by exact `technique_id` metadata in the ATT&CK
+    Chroma store (populated by rag/indexer.py), falling back to the
+    built-in table. This is deliberately not a similarity search: a bare
+    technique ID has no meaningful embedding neighbourhood, so nearest
+    neighbours are unrelated techniques.
     """
     try:
         from rag.store_attck import get_attck_store
-        attck_store = get_attck_store()
-        docs = attck_store.similarity_search(technique_id, k=1)
-        if docs:
-            return {"id": technique_id, "content": docs[0].page_content,
-                    "metadata": docs[0].metadata}
+        found = get_attck_store().get(where={"technique_id": technique_id}, limit=1)
+        documents = found.get("documents") or []
+        if documents:
+            content = documents[0]
+            header = _TECHNIQUE_HEADER_RE.search(content)
+            tactic = _TACTIC_LINE_RE.search(content)
+            return {
+                "id": technique_id,
+                "name": header.group(1).strip() if header else None,
+                "tactic": tactic.group(1).strip() if tactic else None,
+                "content": content,
+                "metadata": (found.get("metadatas") or [{}])[0],
+            }
     except Exception:
         pass
 

@@ -1,235 +1,722 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOC Assistant HITL Interface</title>
-    <style>
-        :root {
-            --bg: #0f172a;
-            --surface: #1e293b;
-            --primary: #3b82f6;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --radius: 8px;
-        }
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-        }
-        aside {
-            width: 300px;
-            background: var(--surface);
-            border-right: 1px solid var(--border);
-            padding: 20px;
-            overflow-y: auto;
-        }
-        main {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-        }
-        h1, h2, h3 { margin-top: 0; }
-        .investigation-card {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            padding: 15px;
-            border-radius: var(--radius);
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-        .investigation-card:hover { border-color: var(--primary); }
-        .investigation-card.active { border-color: var(--primary); background: rgba(59,130,246,0.1); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Assistant · Analyst Console</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232321;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --accent: #6b9cff;
+    --accent-track: rgba(107, 156, 255, 0.18);
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+    --radius: 10px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-        .panel {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        pre {
-            background: var(--bg);
-            padding: 15px;
-            border-radius: var(--radius);
-            overflow-x: auto;
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-            white-space: pre-wrap;
-        }
-        .actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: var(--radius);
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            color: white;
-        }
-        button:hover { opacity: 0.9; }
-        .btn-approve { background: var(--success); }
-        .btn-modify { background: var(--primary); }
-        .btn-reject { background: var(--warning); }
-        .btn-escalate { background: var(--danger); }
+  .topbar { display: flex; align-items: center; gap: 18px; padding: 12px 20px; height: 53px;
+            border-bottom: 1px solid var(--border); background: var(--surface);
+            position: sticky; top: 0; z-index: 5; }
+  .brand { font-weight: 650; white-space: nowrap; }
+  .brand span { color: var(--muted); font-weight: 400; margin-left: 8px; }
+  .boundary { font-size: 12px; color: var(--ink-2); border: 1px solid var(--border);
+              border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .stats { margin-left: auto; color: var(--ink-2); font-size: 13px; white-space: nowrap; }
 
-        .hidden { display: none; }
+  .layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); }
+  .queue { border-right: 1px solid var(--border); background: var(--surface); padding: 12px;
+           overflow-y: auto; height: calc(100vh - 53px); position: sticky; top: 53px; }
+  .queue h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+              color: var(--muted); margin: 4px 6px 10px; }
+  .card { display: block; width: 100%; text-align: left; background: transparent; color: inherit;
+          border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px;
+          margin-bottom: 8px; cursor: pointer; font: inherit; }
+  .card:hover { border-color: var(--axis); background: var(--surface-2); }
+  .card[aria-current="true"] { border-color: var(--accent); background: var(--surface-2); }
+  .card .id { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+  .card .meta { color: var(--muted); font-size: 12px; margin: 2px 0 8px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
-        input, textarea {
-            width: 100%;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 10px;
-            border-radius: var(--radius);
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
-    </style>
+  .main { padding: 20px 24px 40px; min-width: 0; }
+  .detail { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  .rail { position: sticky; top: 73px; display: flex; flex-direction: column; gap: 16px; }
+  .stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+           padding: 16px 18px; min-width: 0; }
+  .panel h3 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+              color: var(--muted); font-weight: 600; }
+  .caption { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .hint { font-size: 13px; color: var(--muted); margin: 0; }
+  .lead { margin: 0 0 12px; }
+  .mono { font-family: var(--mono); }
+
+  .head h1 { margin: 0; font-size: 22px; font-family: var(--mono); }
+  .head .sub { color: var(--ink-2); margin-top: 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; font-size: 12px;
+          border: 1px solid var(--border); border-radius: 999px; color: var(--ink-2); background: var(--surface-2); }
+  .chip b { color: var(--ink); font-weight: 600; font-family: var(--mono); }
+
+  /* Status: always icon + label, never color alone; the label keeps text ink. */
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px 2px 7px;
+           border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--ink); white-space: nowrap;
+           background: var(--surface-2); border: 1px solid var(--tone, var(--axis)); }
+  .badge .ic { color: var(--tone, var(--muted)); font-size: 11px; line-height: 1; }
+  .tone-good { --tone: var(--good); }
+  .tone-warning { --tone: var(--warning); }
+  .tone-serious { --tone: var(--serious); }
+  .tone-critical { --tone: var(--critical); }
+  .tone-muted { --tone: var(--axis); }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .tile .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .tile .value { font-size: 26px; font-weight: 650; margin: 2px 0 8px; font-variant-numeric: tabular-nums; min-height: 39px;
+                 display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 4px; }
+  .tile .value small { font-size: 14px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .tile .value .badge { font-size: 13px; }
+
+  /* Meter: one hue for magnitude, same-ramp track, 4px rounded fill. */
+  .meter-row { display: flex; align-items: center; gap: 10px; }
+  .meter { flex: 1; height: 6px; border-radius: 4px; background: var(--accent-track); overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+  .meter-row .num { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 12px; min-width: 38px; text-align: right; }
+
+  .pipeline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .node { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--border);
+          border-radius: 8px; background: var(--surface-2); font-size: 13px; white-space: nowrap; }
+  .node .ic { color: var(--tone); font-size: 12px; }
+  .node.skipped { border-style: dashed; color: var(--muted); }
+  .node.hitl { border-color: var(--tone); }
+  .par { display: flex; flex-direction: column; gap: 6px; }
+  .step { display: flex; align-items: center; gap: 10px; }
+  .arrow { color: var(--muted); }
+
+  .callout { border-left: 3px solid var(--tone, var(--axis)); background: var(--surface-2); color: var(--ink-2);
+             padding: 8px 12px; border-radius: 0 8px 8px 0; margin: 0 0 12px; }
+  .callout strong { color: var(--ink); }
+  ul.clean { margin: 0; padding: 0; list-style: none; }
+  ul.clean li { padding: 6px 0; border-top: 1px solid var(--grid); display: flex; gap: 8px; }
+  ul.clean li:first-child { border-top: 0; }
+  ul.clean .ic { flex: none; font-size: 11px; line-height: 21px; }
+  ol.timeline { margin: 0; padding-left: 20px; color: var(--ink-2); }
+  ol.timeline li { padding: 3px 0; }
+
+  pre.log { margin: 0; white-space: pre-wrap; word-break: break-word; background: var(--page);
+            border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+            font: 12.5px/1.55 var(--mono); color: var(--ink-2); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--axis); }
+  td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+
+  dl.facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; margin: 0; }
+  dl.facts dt { color: var(--muted); }
+  dl.facts dd { margin: 0; font-family: var(--mono); word-break: break-all; }
+  dl.evidence { margin: 0; display: grid; grid-template-columns: 70px 1fr; gap: 8px 12px; }
+  dl.evidence dt { color: var(--muted); text-transform: uppercase; font-size: 12px; padding-top: 2px; }
+  dl.evidence dd { margin: 0; }
+
+  .tactics { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .tactic { padding: 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--axis); font-size: 12px; }
+  .tactic.next { border-style: dashed; color: var(--ink-2); }
+  .techs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .tech { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--surface-2); }
+  .tech a { color: var(--ink); text-decoration: none; font-family: var(--mono); font-weight: 600; }
+  .tech a:hover { text-decoration: underline; }
+  .tech .name { font-weight: 600; margin-left: 6px; }
+  .tech .tac { color: var(--muted); font-size: 12px; margin: 2px 0 6px; }
+  .tech p { margin: 0; color: var(--ink-2); font-size: 13px; }
+  .tech details summary { cursor: pointer; margin-top: 6px; }
+
+  .proposal { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--grid); }
+  .proposal:first-child { border-top: 0; }
+  .proposal .act { font-family: var(--mono); font-weight: 600; }
+  .proposal .desc { grid-column: 1 / -1; color: var(--ink-2); font-size: 13px; }
+
+  label.field { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 4px; }
+  input, textarea, select { width: 100%; background: var(--page); color: var(--ink); border: 1px solid var(--axis);
+                            border-radius: 8px; padding: 8px 10px; font: inherit; }
+  textarea { resize: vertical; min-height: 88px; }
+  input:focus, textarea:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .actions .wide { grid-column: 1 / -1; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 10px;
+         border-radius: 8px; border: 1px solid var(--tone, var(--axis)); background: var(--surface-2); color: var(--ink);
+         font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn .ic { color: var(--tone); }
+  .btn:hover { background: #2b2b28; }
+  .btn.primary { background: var(--good); border-color: var(--good); color: #04130a; }
+  .btn.primary .ic { color: #04130a; }
+  .btn.primary:hover { background: #0fb80f; }
+  .btn[disabled] { opacity: .5; cursor: progress; }
+  .modify { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .status-msg { margin-top: 10px; font-size: 13px; color: var(--ink-2); min-height: 1.2em; }
+  .panel .hint.small { font-size: 12px; margin-top: 12px; }
+
+  details.raw summary { cursor: pointer; color: var(--muted); }
+  details.raw pre { margin-top: 12px; max-height: 420px; overflow: auto; }
+  .empty { color: var(--muted); text-align: center; padding: 80px 20px; }
+  .empty code { font-family: var(--mono); color: var(--ink-2); background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
+  .banner { background: rgba(208, 59, 59, 0.12); border: 1px solid var(--critical); color: var(--ink);
+            padding: 8px 12px; border-radius: 8px; margin-bottom: 14px; }
+
+  @media (max-width: 1280px) {
+    .detail { grid-template-columns: minmax(0, 1fr); }
+    .rail { position: static; }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .topbar { height: auto; flex-wrap: wrap; }
+    .boundary { display: none; }
+    .layout { grid-template-columns: minmax(0, 1fr); }
+    .queue { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+    .main { padding: 16px; }
+    .tiles { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
 </head>
 <body>
-
-<aside>
-    <h2>Investigations</h2>
-    <div id="investigation-list">Loading...</div>
-</aside>
-
-<main>
-    <div id="empty-state" style="color: var(--text-muted);">
-        Select an investigation to view details.
-    </div>
-
-    <div id="detail-view" class="hidden">
-        <h1 id="alert-title">Alert ID</h1>
-
-        <div class="panel">
-            <h3>Analyst Action</h3>
-            <textarea id="analyst-note" rows="3" placeholder="Analyst notes or justification..."></textarea>
-            <div class="actions">
-                <button class="btn-approve" onclick="submitDecision('approve')">Approve (Actionable)</button>
-                <button class="btn-modify" onclick="submitDecision('modify')">Modify Verdict</button>
-                <button class="btn-reject" onclick="submitDecision('reject')">Reject (False Positive)</button>
-                <button class="btn-escalate" onclick="submitDecision('escalate')">Escalate (L2)</button>
-            </div>
-            <div id="action-status" style="margin-top:10px; color:var(--success);"></div>
-        </div>
-
-        <div class="panel">
-            <h3>Evidence Chain (Agents)</h3>
-            <pre id="evidence-raw"></pre>
-        </div>
-
-        <div class="panel">
-            <h3>Reasoning & Synthesis</h3>
-            <pre id="synthesis-raw"></pre>
-        </div>
-
-        <div class="panel">
-            <h3>Generated Report</h3>
-            <pre id="report-raw"></pre>
-        </div>
-    </div>
-</main>
+<header class="topbar">
+  <div class="brand">SOC Assistant<span>Analyst Console</span></div>
+  <div class="boundary">Human-in-the-loop · no remediation without analyst approval</div>
+  <div id="stats" class="stats">Loading…</div>
+</header>
+<div class="layout">
+  <nav class="queue" aria-label="Investigation queue">
+    <h2>Queue</h2>
+    <div id="queue-list"></div>
+  </nav>
+  <main class="main">
+    <div id="banner" class="banner" role="alert" hidden></div>
+    <div id="detail"></div>
+  </main>
+</div>
 
 <script>
-    let activeId = null;
+"use strict";
 
-    async function fetchInvestigations() {
-        try {
-            const res = await fetch('/investigations/');
-            const ids = await res.json();
-            const list = document.getElementById('investigation-list');
-            list.innerHTML = '';
+// ---------------------------------------------------------------------------
+// Rendering helpers. All model/LLM output is inserted as text, never HTML.
+// ---------------------------------------------------------------------------
 
-            if(ids.length === 0) {
-                list.innerHTML = '<div style="color:var(--text-muted);">No active investigations.</div>';
-                return;
-            }
+const $ = (selector) => document.querySelector(selector);
 
-            ids.forEach(id => {
-                const el = document.createElement('div');
-                el.className = 'investigation-card';
-                el.innerText = id;
-                if (id === activeId) el.classList.add('active');
-                el.onclick = () => loadInvestigation(id, el);
-                list.appendChild(el);
-            });
-        } catch(e) {
-            console.error(e);
-            document.getElementById('investigation-list').innerText = 'Error loading data.';
-        }
+function h(tag, props, ...children) {
+  const el = document.createElement(tag);
+  for (const [key, value] of Object.entries(props || {})) {
+    if (value == null || value === false) continue;
+    if (key === "class") el.className = value;
+    else if (key === "text") el.textContent = value;
+    else if (key.startsWith("on")) el.addEventListener(key.slice(2), value);
+    else el.setAttribute(key, value === true ? "" : value);
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child == null || child === false || child === "") continue;
+    el.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return el;
+}
+
+const humanize = (s) => (s ? String(s).replace(/[_-]+/g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "");
+const pct = (x) => (typeof x === "number" && isFinite(x) ? `${Math.round(x * 100)}%` : "—");
+
+function fmtTime(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? "" : `${d.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+}
+
+function duration(ms) {
+  const minutes = Math.round(Math.abs(ms) / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h ${minutes % 60}m`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+const VERDICTS = {
+  actionable:          { tone: "critical", icon: "▲", label: "Actionable" },
+  needs_investigation: { tone: "warning",  icon: "◆", label: "Needs investigation" },
+  false_positive:      { tone: "good",     icon: "✓", label: "False positive" },
+};
+const DECISIONS = {
+  approve:  { tone: "good",    icon: "✓", label: "Approved" },
+  escalate: { tone: "serious", icon: "⬆", label: "Escalated" },
+  modify:   { tone: "warning", icon: "✎", label: "Verdict modified" },
+  reject:   { tone: "muted",   icon: "✕", label: "Rejected as false positive" },
+};
+const REPUTATION = {
+  malicious:  { tone: "critical", icon: "▲", label: "Malicious" },
+  suspicious: { tone: "serious",  icon: "◆", label: "Suspicious" },
+  clean:      { tone: "good",     icon: "✓", label: "Clean" },
+};
+
+function badge(spec, fallbackLabel) {
+  const s = spec || { tone: "muted", icon: "●", label: fallbackLabel || "Unknown" };
+  return h("span", { class: `badge tone-${s.tone}` },
+    h("span", { class: "ic", "aria-hidden": "true", text: s.icon }), s.label);
+}
+
+function severityBand(sev) {
+  if (typeof sev !== "number") return null;
+  if (sev >= 9) return { tone: "critical", icon: "▲", label: "Critical" };
+  if (sev >= 7) return { tone: "serious",  icon: "◆", label: "High" };
+  if (sev >= 4) return { tone: "warning",  icon: "●", label: "Medium" };
+  return { tone: "good", icon: "▼", label: "Low" };
+}
+
+function slaStatus(deadline, decided) {
+  if (decided) return { tone: "good", icon: "✓", label: "Decision recorded" };
+  const remaining = new Date(deadline) - Date.now();
+  if (isNaN(remaining)) return null;
+  if (remaining < 0) return { tone: "critical", icon: "!", label: `SLA breached ${duration(remaining)} ago` };
+  if (remaining < 15 * 60000) return { tone: "serious", icon: "◷", label: `SLA due in ${duration(remaining)}` };
+  return { tone: "muted", icon: "◷", label: `SLA due in ${duration(remaining)}` };
+}
+
+function meterRow(fraction, numText, label) {
+  const known = typeof fraction === "number" && isFinite(fraction);
+  const f = known ? Math.max(0, Math.min(1, fraction)) : 0;
+  return h("div", { class: "meter-row", title: `${label}: ${known ? numText : "unknown"}` },
+    h("div", { class: "meter", role: "meter", "aria-label": label, "aria-valuemin": "0",
+               "aria-valuemax": "100", "aria-valuenow": String(Math.round(f * 100)) },
+      h("div", { class: "meter-fill", style: `width:${(f * 100).toFixed(1)}%` })),
+    h("span", { class: "num", text: known ? numText : "—" }));
+}
+
+const chip = (label, value) => (value ? h("span", { class: "chip" }, label, h("b", { text: String(value) })) : null);
+const panel = (title, ...body) => h("section", { class: "panel" }, h("h3", { text: title }), ...body);
+const listItem = (icon, tone, text) =>
+  h("li", {}, h("span", { class: `ic tone-${tone}`, style: "color:var(--tone)", "aria-hidden": "true", text: icon }), text);
+
+async function getJSON(url, options) {
+  const res = await fetch(url, options);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || `${res.status} ${res.statusText}`);
+  return body;
+}
+
+function storedAnalyst() {
+  try { return localStorage.getItem("soc.analystId") || "analyst-1"; } catch { return "analyst-1"; }
+}
+function saveAnalyst(id) {
+  try { localStorage.setItem("soc.analystId", id); } catch { /* storage unavailable */ }
+}
+
+// ---------------------------------------------------------------------------
+// Queue
+// ---------------------------------------------------------------------------
+
+let queue = [];
+let activeId = null;
+let current = null;
+let lastMessage = null;
+
+function setBanner(text) {
+  const el = $("#banner");
+  el.hidden = !text;
+  el.textContent = text || "";
+}
+
+async function loadQueue() {
+  try {
+    queue = await getJSON("/investigations/summaries");
+    setBanner(null);
+  } catch (e) {
+    setBanner(`Cannot reach the HITL API: ${e.message}`);
+    return;
+  }
+  queue.sort((a, b) =>
+    (a.hitl_decision ? 1 : 0) - (b.hitl_decision ? 1 : 0) ||
+    (b.severity ?? 0) - (a.severity ?? 0) ||
+    String(a.alert_id).localeCompare(String(b.alert_id)));
+
+  const pending = queue.filter((q) => !q.hitl_decision).length;
+  $("#stats").textContent = `${queue.length} investigation${queue.length === 1 ? "" : "s"} · ${pending} awaiting decision`;
+  renderQueue();
+
+  if (!queue.length) { activeId = null; renderEmpty(); }
+  else if (!activeId || !queue.some((q) => q.alert_id === activeId)) {
+    const linked = decodeURIComponent(location.hash.slice(1));
+    selectInvestigation(queue.some((q) => q.alert_id === linked) ? linked : queue[0].alert_id);
+  }
+}
+
+function renderQueue() {
+  const list = $("#queue-list");
+  list.replaceChildren();
+  if (!queue.length) { list.append(h("p", { class: "hint", text: "No investigations yet." })); return; }
+  for (const q of queue) {
+    list.append(h("button", {
+        class: "card", type: "button", "aria-current": String(q.alert_id === activeId),
+        onclick: () => selectInvestigation(q.alert_id),
+      },
+      h("div", { class: "row" }, h("span", { class: "id", text: q.alert_id }), badge(DECISIONS[q.hitl_decision], "Awaiting review")),
+      h("div", { class: "meta", text: [humanize(q.category), q.source].filter(Boolean).join(" · ") }),
+      h("div", { class: "row" },
+        badge(VERDICTS[q.verdict], "No verdict"),
+        h("span", { class: "caption", style: "margin:0", text: typeof q.severity === "number" ? `Severity ${q.severity.toFixed(1)}` : "" }))));
+  }
+}
+
+function renderEmpty() {
+  $("#detail").replaceChildren(h("div", { class: "empty" },
+    h("p", { text: "No investigations yet." }),
+    h("p", {}, "Run ", h("code", { text: "python run_pipeline.py --alert-id ALT-2026-002" }), " to create one — it appears here automatically.")));
+}
+
+async function selectInvestigation(id) {
+  activeId = id;
+  history.replaceState(null, "", `#${encodeURIComponent(id)}`);
+  renderQueue();
+  if (!current || current.id !== id) $("#detail").replaceChildren(h("p", { class: "empty", text: "Loading investigation…" }));
+  try {
+    const enc = encodeURIComponent(id);
+    const [evidence, trace, report] = await Promise.all([
+      getJSON(`/investigations/${enc}`),
+      getJSON(`/investigations/${enc}/reasoning-trace`),
+      getJSON(`/investigations/${enc}/report`),
+    ]);
+    if (activeId !== id) return;
+    current = { id, evidence, trace, report };
+    renderDetail();
+  } catch (e) {
+    $("#detail").replaceChildren(h("div", { class: "banner", text: `Could not load ${id}: ${e.message}` }));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Investigation detail
+// ---------------------------------------------------------------------------
+
+function renderDetail() {
+  const { evidence: ev, trace: tr, report: rp } = current;
+  const alert = ev.alert_raw || {};
+  const triage = ev.triage_output || {};
+  const syn = tr.synthesis_output || {};
+
+  const content = h("div", { class: "stack" },
+    renderHeader(ev, alert, triage),
+    renderTiles(ev, tr, triage, syn),
+    panel("Agent pipeline", renderPipeline(ev)),
+    panel("Reasoning & verdict", renderSynthesis(tr, syn)),
+    panel("Threat intelligence", renderCTI(ev.cti_output)),
+    panel("MITRE ATT&CK", renderAttck(ev.attck_output, rp || {})),
+    panel("Log investigation", renderLogs(ev.log_output, alert)),
+    panel("Incident report", renderReport(rp, ev)),
+    renderRaw());
+  const rail = h("aside", { class: "rail" }, renderDecision(ev, syn), panel("Alert", renderAlert(alert)));
+  $("#detail").replaceChildren(h("div", { class: "detail" }, content, rail));
+}
+
+function renderHeader(ev, alert, triage) {
+  return h("header", { class: "head" },
+    h("h1", { text: ev.alert_id }),
+    h("div", { class: "sub", text: [humanize(triage.category || alert.category), alert.source && `${alert.source} alert`, fmtTime(alert.timestamp)].filter(Boolean).join(" · ") }),
+    h("div", { class: "chips" },
+      badge(slaStatus(ev.sla_deadline, !!ev.hitl_decision)),
+      ev.sla_deadline && chip("SLA deadline", fmtTime(ev.sla_deadline))));
+}
+
+function tile(label, value, ...extra) {
+  return h("div", { class: "tile" }, h("div", { class: "label", text: label }), h("div", { class: "value" }, value), ...extra);
+}
+
+function renderTiles(ev, tr, triage, syn) {
+  const confidence = tr.confidence_score ?? syn.confidence;
+  const sev = triage.severity;
+  const fp = triage.fp_probability;
+  const att = ev.attck_output || {};
+  const stage = att.kill_chain_position;
+  return h("div", { class: "tiles" },
+    tile("Verdict", badge(VERDICTS[syn.verdict], "No verdict"),
+      h("div", { class: "caption", text: "Confidence" }), meterRow(confidence, pct(confidence), "Verdict confidence")),
+    tile("Triage severity",
+      [typeof sev === "number" ? sev.toFixed(1) : "—", h("small", { text: "/ 10" }), severityBand(sev) && badge(severityBand(sev))],
+      h("div", { class: "caption", text: "Severity score" }), meterRow(typeof sev === "number" ? sev / 10 : null, typeof sev === "number" ? sev.toFixed(1) : "—", "Triage severity")),
+    tile("False-positive risk", pct(fp),
+      h("div", { class: "caption", text: typeof fp === "number" ? (fp >= 0.5 ? "More likely benign" : "More likely a true positive") : "Not estimated" }),
+      meterRow(fp, pct(fp), "False-positive probability")),
+    tile("ATT&CK coverage", [String((att.technique_ids || []).length), h("small", { text: "techniques" })],
+      h("div", { class: "caption", text: stage ? `Kill-chain stage ${stage} of 13` : "No kill-chain stage" }),
+      meterRow(stage ? stage / 13 : null, stage ? `${stage}/13` : "—", "Kill-chain stage")));
+}
+
+const PIPELINE = [
+  ["triage", "Triage"],
+  [["log_investigator", "Log investigation"], ["cti_enrichment", "CTI enrichment"], ["attck_mapper", "ATT&CK mapping"]],
+  ["reasoning_synthesis", "Reasoning & synthesis"],
+  ["report_generator", "Incident report"],
+];
+
+function renderPipeline(ev) {
+  const done = new Set(ev.agents_completed || []);
+  const failed = new Set(ev.agents_failed || []);
+  const node = ([key, label]) => {
+    const state = failed.has(key) ? { tone: "critical", icon: "✕", title: "Failed after retry", extra: "failed" }
+      : done.has(key) ? { tone: "good", icon: "✓", title: "Completed", extra: "" }
+      : { tone: "muted", icon: "–", title: "Skipped by the router for this alert type", extra: "skipped" };
+    return h("div", { class: `node tone-${state.tone} ${state.extra === "skipped" ? "skipped" : ""}`, title: state.title },
+      h("span", { class: "ic", "aria-hidden": "true", text: state.icon }), label,
+      state.extra && h("span", { class: "visually-hidden", text: ` (${state.extra})` }));
+  };
+  const arrow = () => h("span", { class: "arrow", "aria-hidden": "true", text: "→" });
+  const items = PIPELINE.map((step, i) => {
+    const el = Array.isArray(step[0]) ? h("div", { class: "par" }, step.map(node)) : node(step);
+    return i ? h("div", { class: "step" }, arrow(), el) : el;
+  });
+  const decision = DECISIONS[ev.hitl_decision];
+  items.push(h("div", { class: "step" }, arrow(),
+    h("div", { class: `node hitl tone-${decision ? decision.tone : "warning"}`, title: "Human-in-the-loop boundary" },
+      h("span", { class: "ic", "aria-hidden": "true", text: decision ? decision.icon : "●" }),
+      decision ? `Analyst: ${decision.label}` : "Awaiting analyst")));
+  return h("div", { class: "pipeline" }, items);
+}
+
+function renderSynthesis(tr, syn) {
+  const missing = [...new Set([...(syn.missing_evidence || []), ...(tr.missing_evidence || [])])];
+  return [
+    h("p", { class: "lead", text: syn.narrative || "No narrative was produced." }),
+    tr.escalation_flag && syn.escalation_reason &&
+      h("div", { class: "callout tone-serious" }, h("strong", { text: "Escalation: " }), syn.escalation_reason),
+    missing.length > 0 && [
+      h("div", { class: "caption", text: "Evidence gaps flagged by the model" }),
+      h("ul", { class: "clean" }, missing.map((m) => listItem("◆", "warning", m))),
+    ],
+  ];
+}
+
+function renderCTI(cti) {
+  if (!cti) return h("p", { class: "hint", text: "CTI enrichment did not run for this alert." });
+  const indicators = cti.indicators || [];
+  const rows = indicators.map((ind) => {
+    const value = ind.value || ind.ip || ind.hash || ind.domain || "—";
+    const type = ind.type || (ind.ip ? "ip" : ind.hash ? "hash" : ind.domain ? "domain" : "—");
+    const rep = String(ind.reputation || (ind.known_malicious ? "malicious" : "unknown")).toLowerCase();
+    const context = [ind.threat_actor, ind.campaign, ind.malware_family, ind.country,
+                     ind.exclusivity && `${ind.exclusivity} infrastructure`, (ind.tags || []).join(", ")]
+      .filter(Boolean).join(" · ");
+    return h("tr", {},
+      h("td", { class: "mono", text: value }),
+      h("td", { text: String(type).toUpperCase() }),
+      h("td", {}, badge(REPUTATION[rep], humanize(rep))),
+      h("td", { style: "min-width:150px" }, meterRow(ind.confidence, pct(ind.confidence), "Indicator confidence")),
+      h("td", { style: "color:var(--ink-2)", text: context || "—" }));
+  });
+  return [
+    cti.threat_summary && h("p", { class: "lead", text: cti.threat_summary }),
+    indicators.length
+      ? h("div", { class: "table-wrap" }, h("table", {},
+          h("thead", {}, h("tr", {}, ["Indicator", "Type", "Reputation", "Confidence", "Context"].map((t) => h("th", { text: t })))),
+          h("tbody", {}, rows)))
+      : h("p", { class: "hint", text: "No indicators were extracted from this alert." }),
+    typeof cti.cti_confidence === "number" &&
+      h("div", { class: "caption", style: "margin:10px 0 0", text: `Overall CTI confidence ${pct(cti.cti_confidence)}` }),
+  ];
+}
+
+function cleanAttackText(text) {
+  return String(text || "")
+    .replace(/\(Citation:[^)]*\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const techniqueUrl = (id) => `https://attack.mitre.org/techniques/${String(id).replace(".", "/")}/`;
+
+function renderAttck(att, rp) {
+  if (!att) return h("p", { class: "hint", text: "ATT&CK mapping did not run for this alert." });
+  const reportCards = Object.fromEntries((rp.attck_technique_cards || []).map((c) => [c.id, c]));
+  const details = Object.fromEntries((att.technique_details || []).map((d) => [d.id, d]));
+
+  const chain = [];
+  (att.observed_tactics || []).forEach((t, i) => {
+    if (i) chain.push(h("span", { class: "arrow", "aria-hidden": "true", text: "→" }));
+    chain.push(h("span", { class: "tactic", text: humanize(t) }));
+  });
+  if ((att.predicted_next || []).length) {
+    chain.push(h("span", { class: "caption", style: "margin:0 2px 0 12px", text: "Likely next:" }));
+    att.predicted_next.forEach((t) => chain.push(h("span", { class: "tactic next", text: humanize(t) })));
+  }
+
+  const cards = (att.technique_ids || []).map((id) => {
+    const detail = details[id] || {};
+    const card = reportCards[id] || {};
+    const described = String(detail.content || "").split(/Description:/)[1];
+    const full = cleanAttackText(described ? described.split(/Detection:/)[0] : card.description);
+    const short = full.length > 240 ? `${full.slice(0, 240).replace(/\s+\S*$/, "")}…` : full;
+    return h("article", { class: "tech" },
+      h("div", {},
+        h("a", { href: techniqueUrl(id), target: "_blank", rel: "noopener noreferrer", text: id }),
+        (detail.name || card.name) && h("span", { class: "name", text: detail.name || card.name })),
+      detail.tactic && h("div", { class: "tac", text: humanize(detail.tactic) }),
+      short && h("p", { text: short }),
+      full.length > 240 && h("details", {}, h("summary", { class: "caption", text: "Full description" }), h("p", { text: full })));
+  });
+
+  return [
+    h("div", { class: "tactics" }, chain.length ? chain : h("span", { class: "hint", text: "No tactics identified." })),
+    cards.length ? h("div", { class: "techs" }, cards) : h("p", { class: "hint", text: "No techniques mapped." }),
+  ];
+}
+
+const ENTITY_LABELS = { ips: "IP", users: "User", processes: "Process" };
+
+function renderLogs(log, alert) {
+  if (!log) {
+    return h("p", { class: "hint", text: alert.category === "impossible_travel"
+      ? "Skipped by the router: identity-only alerts carry no endpoint telemetry, so the log investigator does not run."
+      : "Log investigation did not run for this alert." });
+  }
+  const entities = log.entities || {};
+  const anomalies = log.anomalies || [];
+  const timeline = log.timeline || [];
+  return [
+    anomalies.length
+      ? [h("div", { class: "caption", text: "Anomalies" }), h("ul", { class: "clean" }, anomalies.map((a) => listItem("◆", "serious", a)))]
+      : h("p", { class: "hint", text: "No anomalies reported." }),
+    timeline.length > 0 && [
+      h("div", { class: "caption", style: "margin-top:14px", text: "Timeline" }),
+      h("ol", { class: "timeline" }, timeline.map((t) => h("li", { text: typeof t === "string" ? t : JSON.stringify(t) }))),
+    ],
+    h("div", { class: "chips" }, Object.keys(ENTITY_LABELS).flatMap((k) => (entities[k] || []).map((v) => chip(ENTITY_LABELS[k], v)))),
+  ];
+}
+
+function renderReport(rp, ev) {
+  if (!rp || !Object.keys(rp).length) return h("p", { class: "hint", text: "No report was generated." });
+  const evidenceChain = Object.entries(rp.evidence_chain || {});
+  const proposals = rp.remediation_proposals || [];
+  return [
+    rp.executive_summary && h("p", { class: "lead", text: rp.executive_summary }),
+    evidenceChain.length > 0 && [
+      h("div", { class: "caption", text: "Evidence chain" }),
+      h("dl", { class: "evidence" }, evidenceChain.flatMap(([k, v]) => [h("dt", { text: k }), h("dd", { text: typeof v === "string" ? v : JSON.stringify(v) })])),
+    ],
+    h("div", { class: "caption", style: "margin-top:16px", text: `Remediation proposals (${proposals.length})` }),
+    h("div", {}, proposals.map((p) => h("div", { class: "proposal" },
+      h("span", { class: "act", text: p.action }),
+      ev.approved_by
+        ? badge({ tone: "good", icon: "✓", label: `Approved by ${ev.approved_by}` })
+        : badge({ tone: "warning", icon: "◆", label: "Requires analyst approval" }),
+      h("div", { class: "desc", text: p.description })))),
+  ];
+}
+
+function renderAlert(alert) {
+  const facts = [
+    ["Source", alert.source], ["Category", humanize(alert.category)], ["Raw severity", alert.severity],
+    ["User", alert.user], ["Host", alert.hostname || alert.host], ["Source IP", alert.source_ip],
+    ["Dest IP", alert.dest_ip], ["Process", alert.process], ["Time", fmtTime(alert.timestamp)],
+  ].filter(([, v]) => v != null && v !== "");
+  return [
+    h("dl", { class: "facts" }, facts.flatMap(([k, v]) => [h("dt", { text: k }), h("dd", { text: String(v) })])),
+    alert.raw_log && [h("div", { class: "caption", style: "margin-top:14px", text: "Raw log" }), h("pre", { class: "log", text: alert.raw_log })],
+  ];
+}
+
+function renderRaw() {
+  return h("details", { class: "panel raw" },
+    h("summary", { text: "Raw investigation data (JSON)" }),
+    h("pre", { class: "log", text: JSON.stringify({ evidence: current.evidence, reasoning_trace: current.trace, report: current.report }, null, 2) }));
+}
+
+// ---------------------------------------------------------------------------
+// Analyst decision
+// ---------------------------------------------------------------------------
+
+function renderDecision(ev, syn) {
+  const decision = DECISIONS[ev.hitl_decision];
+  const analyst = h("input", { id: "analyst-id", value: storedAnalyst(), autocomplete: "off" });
+  const note = h("textarea", { id: "analyst-note", placeholder: "Justification, corrections to the AI output, or context for L2…" });
+  const verdictSelect = h("select", { "aria-label": "Corrected verdict" },
+    Object.entries(VERDICTS).map(([key, v]) => h("option", { value: key, selected: key === syn.verdict, text: v.label })));
+  const status = h("div", { class: "status-msg", role: "status" });
+  if (lastMessage && lastMessage.id === ev.alert_id) status.textContent = lastMessage.text;
+
+  const buttons = [];
+  const button = (label, icon, tone, onclick, extraClass = "") => {
+    const b = h("button", { class: `btn tone-${tone} ${extraClass}`, type: "button", onclick },
+      h("span", { class: "ic", "aria-hidden": "true", text: icon }), label);
+    buttons.push(b);
+    return b;
+  };
+
+  async function submit(action, extra = {}) {
+    const analystId = analyst.value.trim();
+    if (!analystId) { status.textContent = "Enter an analyst ID first."; analyst.focus(); return; }
+    saveAnalyst(analystId);
+    buttons.forEach((b) => { b.disabled = true; });
+    status.textContent = "Submitting…";
+    try {
+      const res = await getJSON(`/investigations/${encodeURIComponent(ev.alert_id)}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, analyst_id: analystId, note: note.value.trim() || null, ...extra }),
+      });
+      lastMessage = { id: ev.alert_id, text: res.message || "Decision recorded." };
+      await loadQueue();
+      await selectInvestigation(ev.alert_id);
+    } catch (e) {
+      status.textContent = `Error: ${e.message}`;
+      buttons.forEach((b) => { b.disabled = false; });
     }
+  }
 
-    async function loadInvestigation(id, el) {
-        activeId = id;
-        document.querySelectorAll('.investigation-card').forEach(c => c.classList.remove('active'));
-        if(el) el.classList.add('active');
+  const correctedVerdict = (verdict) => ({
+    modified_fields: { synthesis_output: { ...syn, verdict, remediation_required: verdict === "actionable" } },
+    corrected_fields: ["synthesis_output.verdict"],
+  });
 
-        document.getElementById('empty-state').classList.add('hidden');
-        document.getElementById('detail-view').classList.remove('hidden');
-        document.getElementById('action-status').innerText = '';
-        document.getElementById('analyst-note').value = '';
+  return h("section", { class: "panel" },
+    h("h3", { text: "Analyst decision" }),
+    h("div", { class: "row" },
+      badge(decision, "Awaiting review"),
+      ev.approved_by && h("span", { class: "caption mono", style: "margin:0", text: `approved_by: ${ev.approved_by}` })),
+    ev.analyst_note && h("div", { class: "callout", style: "margin:12px 0 0" }, h("strong", { text: "Note: " }), ev.analyst_note),
+    h("label", { class: "field", for: "analyst-id", text: "Analyst ID" }), analyst,
+    h("label", { class: "field", for: "analyst-note", text: "Note" }), note,
+    h("div", { class: "actions" },
+      button("Approve remediation", "✓", "good", () => submit("approve"), "primary wide"),
+      button("Escalate to L2", "⬆", "serious", () => submit("escalate")),
+      button("False positive", "✕", "muted", () =>
+        submit("reject", syn.verdict && syn.verdict !== "false_positive" ? correctedVerdict("false_positive") : {}))),
+    h("label", { class: "field", text: "Correct the verdict" }),
+    h("div", { class: "modify" }, verdictSelect,
+      button("Modify", "✎", "warning", () => {
+        if (verdictSelect.value === syn.verdict) { status.textContent = "Choose a different verdict to modify it."; return; }
+        submit("modify", correctedVerdict(verdictSelect.value));
+      })),
+    status,
+    h("p", { class: "hint small", text: "Only an approval sets approved_by and unlocks remediation. Modify and false-positive decisions feed the RAG correction ledger and DPO preference pairs." }));
+}
 
-        document.getElementById('alert-title').innerText = `Investigation: ${id}`;
+window.addEventListener("hashchange", () => {
+  const linked = decodeURIComponent(location.hash.slice(1));
+  if (linked !== activeId && queue.some((q) => q.alert_id === linked)) selectInvestigation(linked);
+});
 
-        try {
-            const evRes = await fetch(`/investigations/${id}`);
-            document.getElementById('evidence-raw').innerText = JSON.stringify(await evRes.json(), null, 2);
-
-            const synRes = await fetch(`/investigations/${id}/reasoning-trace`);
-            document.getElementById('synthesis-raw').innerText = JSON.stringify(await synRes.json(), null, 2);
-
-            const repRes = await fetch(`/investigations/${id}/report`);
-            document.getElementById('report-raw').innerText = JSON.stringify(await repRes.json(), null, 2);
-        } catch(e) {
-            console.error(e);
-            alert("Error loading details");
-        }
-    }
-
-    async function submitDecision(action) {
-        if(!activeId) return;
-        const note = document.getElementById('analyst-note').value;
-
-        try {
-            const res = await fetch(`/investigations/${activeId}/decision`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: action,
-                    analyst_id: "admin-ui",
-                    note: note,
-                    corrected_fields: [],
-                })
-            });
-            const data = await res.json();
-            if(res.ok) {
-                document.getElementById('action-status').innerText = data.message;
-            } else {
-                document.getElementById('action-status').innerText = `Error: ${data.detail}`;
-                document.getElementById('action-status').style.color = "var(--danger)";
-            }
-        } catch(e) {
-            console.error(e);
-            alert("Error submitting decision");
-        }
-    }
-
-    fetchInvestigations();
-    setInterval(fetchInvestigations, 5000); // auto-refresh
+loadQueue();
+setInterval(loadQueue, 10000);
 </script>
 </body>
 </html>
