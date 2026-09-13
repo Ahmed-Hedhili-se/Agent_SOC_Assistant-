@@ -1,0 +1,18 @@
+{
+  "system": "mapper",
+  "model": "foundation-sec-8b-instruct-v2",
+  "dataset": "attck_procedures.json",
+  "n": 50,
+  "exact_precision": 0.203,
+  "exact_recall": 0.5,
+  "exact_f1": 0.28,
+  "parent_precision": 0.31,
+  "parent_recall": 0.68,
+  "parent_f1": 0.413,
+  "avg_predicted": 2.7,
+  "empty_rate": 0.02,
+  "errors": 0,
+  "latency_mean_s": 5.735,
+  "latency_median_s": 5.75,
+  "created_at": "2026-09-12T18:14:57.486907+00:00"
+}

@@ -6,7 +6,7 @@ A multi-agent Security Operations Center (SOC) assistant built with **LangGraph*
 ![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-1f6feb)
 ![FastAPI](https://img.shields.io/badge/HITL%20API-FastAPI-009688)
 
-**Benchmarked result:** grounding the ATT&CK mapper in retrieval raises exact technique accuracy from 38% to **62%** on 50 labelled ATT&CK procedure examples (gpt-oss:20b, McNemar p = 0.008), and the gain replicates across three self-hosted models — [see the benchmark](#benchmark-attck-technique-mapping).
+**Benchmarked result:** grounding the ATT&CK mapper in retrieval raises exact technique accuracy from 38% to **62%** on 50 labelled ATT&CK procedure examples (gpt-oss:20b, McNemar p = 0.008), replicated on two more general-purpose models. Security-tuned 8B models match the 20B model without retrieval but gain little from it — [see the benchmark](#benchmark-attck-technique-mapping).
 
 ## Design philosophy
 
@@ -136,7 +136,7 @@ The suite runs fully offline (mock embeddings + mock LLM) and covers graph routi
 
 Does retrieval-grounded mapping actually beat asking the model directly? `eval/attck_benchmark.py` measures it.
 
-**Setup.** Ground truth comes from MITRE ATT&CK's own procedure examples (release v15.1, the same release the RAG index uses): each real-world procedure description becomes an alert, and the technique it documents is the expected answer. Citations, links and technique IDs are stripped from the text, so the answer never leaks. The dataset is 50 examples covering 50 distinct techniques (35 of them sub-techniques) and is committed in `data/benchmarks/attck_procedures.json`. Scoring is reported at two levels: **exact** (T1059.001 must match T1059.001) and **parent** (T1059.001 counts as T1059). Neither prompt contains an example technique ID, since small models copy one verbatim.
+**Setup.** Ground truth comes from MITRE ATT&CK's own procedure examples (release v15.1, the same release the RAG index uses): each real-world procedure description becomes an alert, and the technique it documents is the expected answer. Citations, links and technique IDs are stripped from the text, so the answer never leaks. The dataset is 50 examples covering 50 distinct techniques (35 of them sub-techniques) and is committed in `data/benchmarks/attck_procedures.json`. Scoring is reported at two levels: **exact** (T1059.001 must match T1059.001) and **parent** (T1059.001 counts as T1059). The baseline prompt contains no example technique ID (small models copy one verbatim); the mapper agent's prompt does show two, and across all 250 mapper runs they appear only 5 times (`T1078` once per model, `T1021.001` never).
 
 ### Retrieval vs. the same model alone
 
@@ -146,20 +146,24 @@ Does retrieval-grounded mapping actually beat asking the model directly? `eval/a
 | `mapper` — ATT&CK agent (RAG + LLM) | **0.54** | **0.62** | **0.56** | **0.78** | 7.5 s |
 | `pipeline` — full multi-agent graph | 0.52 | 0.62 | 0.55 | 0.76 | 35.6 s |
 
-The gain holds across three self-hosted models of different sizes and families (exact recall, 50 paired examples, two-sided exact McNemar test):
+Across five self-hosted models — three general-purpose, two security-tuned (exact recall, 50 paired examples, two-sided exact McNemar test):
 
-| Model | Baseline | Mapper (RAG) | p (exact) | p (parent) |
-|---|---|---|---|---|
-| gpt-oss:20b | 38% | **62%** | 0.008 | 0.039 |
-| glm-4.7-flash (q4) | 14% | **54%** | <0.0001 | 0.019 |
-| qwen3:8b | 2% | **52%** | <0.0001 | <0.0001 |
+| Model | Type | Baseline | Mapper (RAG) | p (exact) | p (parent) |
+|---|---|---|---|---|---|
+| gpt-oss:20b | general, 20B | 38% | **62%** | 0.008 | 0.039 |
+| glm-4.7-flash (q4) | general | 14% | **54%** | <0.0001 | 0.019 |
+| qwen3:8b | general, 8B | 2% | **52%** | <0.0001 | <0.0001 |
+| Foundation-Sec-8B-Reasoning (q4) | security-tuned, 8B | **40%** | 48% | 0.45 | 0.77 |
+| Foundation-Sec-8B-Instruct (q4) | security-tuned, 8B | 36% | 50% | 0.12 | 0.39 |
 
 ### What the numbers say
 
-- **Retrieval significantly improves exact technique identification for every model tested.** The effect is largest where the model's own ATT&CK knowledge is weakest: with retrieval, all three models land in a 52–62% band regardless of where they started.
+- **Retrieval significantly improves exact technique identification for every general-purpose model.** The effect is largest where the model's own ATT&CK knowledge is weakest: with retrieval, all three land in a 52–62% band regardless of where they started.
+- **Security domain tuning substitutes for scale on intrinsic knowledge.** Without retrieval, the security-tuned 8B models (40%, 36%) match a general model 2.5x their size (gpt-oss:20b, 38%), while a general 8B manages 2%.
+- **Domain tuning and retrieval are largely substitutes, not complements.** Retrieval's gain on the security-tuned models was small and not significant (+8 and +14 points; p = 0.45 and 0.12). The best overall system is still the general 20B model with retrieval (62%). For this task, a model-per-role allocation buys little once the mapper is retrieval-grounded.
 - **Most of the gain is ID precision, not comprehension.** gpt-oss:20b already identified the right parent technique 62% of the time on its own; retrieval mainly converts "roughly the right family" into the exact sub-technique ID.
 - **The full pipeline matched the mapper agent exactly** (31/50 both, p = 1.0) at ~5x the latency. For this task the accuracy comes from the retrieval-grounded agent, not from the surrounding agents.
-- **Retrieval is not free.** In 1–4 cases per model the baseline was right where the RAG-grounded agent was wrong, i.e. retrieved context can mislead. Filtering retrieved documents by relevance is the obvious next step.
+- **Retrieval is not free.** In up to 6 of 50 cases per model the baseline was right where the RAG-grounded agent was wrong, i.e. retrieved context can mislead. Foundation-Sec-8B-Instruct also over-predicts when given retrieved candidates (2.7 IDs per alert, exact precision 0.20). Filtering retrieved documents by relevance is the obvious next step.
 
 ### Limitations
 
@@ -168,6 +172,7 @@ The gain holds across three self-hosted models of different sizes and families (
 - Retrieval runs over the official technique descriptions, matched in domain and vocabulary to the test prose.
 - The pipeline row is one model, N=50. The benchmark scores **ATT&CK mapping only**: triage, correlation, synthesis and report quality are not measured, so this says nothing about whether the other agents help at *their* jobs.
 - LLM sampling is non-deterministic; single runs per cell, no repeats.
+- Foundation-Sec models ran as 4-bit GGUF quantizations, which may understate them. The official `fdtn-ai/Foundation-Sec-8B-Instruct-Q8_0-GGUF` ships without a chat template and returned no usable output through Ollama; its results come from the community `gabriellarson/Foundation-Sec-8B-Instruct-GGUF` (Q4_K_M).
 
 ### Reproduce
 
